@@ -98,7 +98,7 @@ echo "==> archive（Release，Developer ID 签名 + 时间戳）"
 xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
     -destination "generic/platform=macOS" -archivePath "$ARCHIVE" \
     -derivedDataPath "$DERIVED_DATA" -disableAutomaticPackageResolution -quiet \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" \
+    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM_ID" ENABLE_HARDENED_RUNTIME=YES \
     OTHER_CODE_SIGN_FLAGS="--timestamp"
 [[ -d "$ARCHIVE" ]] || fail "没有生成 archive：$ARCHIVE"
 
