@@ -282,7 +282,7 @@ enum MCPTools {
         catalog.register(MCPTool(
             name: "open_map",
             title: "Open map",
-            description: "Open a .fmind map in a FreeMind window, or import a Markdown, OPML, XMind or text file as a new unsaved map.",
+            description: "Open a .fmind or MindManager .mmap map in a FreeMind window, or import a Markdown, OPML, XMind or text file as a new unsaved map.",
             inputSchema: MCPSchema.object([
                 "path": MCPSchema.string("Absolute file path (~ is allowed)"),
             ], required: ["path"]),
@@ -295,7 +295,7 @@ enum MCPTools {
             description: "Save a map. Maps that already have a file are also saved automatically; a new map needs 'path' the first time. Existing files are never overwritten.",
             inputSchema: MCPSchema.object([
                 "map_id": mapID,
-                "path": MCPSchema.string("Where to save, such as ~/Documents/Plan.fmind (.fmind is added if missing)"),
+                "path": MCPSchema.string("Where to save, such as ~/Documents/Plan.fmind (.fmind is added if missing; a map opened from .mmap can also be saved to a .mmap path)"),
             ]),
             tier: .write
         ) { args in try await facade.saveMap(args) })

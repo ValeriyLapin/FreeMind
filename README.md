@@ -20,7 +20,7 @@ such as Claude Code and Codex, can read and edit the maps you have open:
 
 - Read a whole map or a single branch, search topics, and render the map as an image to check the result
 - Add, edit, move and delete topics; set markers, labels, notes, relationships and formatting
-- Create maps, open or import Markdown / OPML / XMind files, and save
+- Create maps, open or import Markdown / OPML / XMind / MindManager files, and save
 
 For example, ask the agent to "turn these meeting notes into a mind map" or "give every unfinished task a priority".
 Every change an agent makes is one undo step, so ⌘Z takes it back.

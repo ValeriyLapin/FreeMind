@@ -424,8 +424,8 @@ extension MCPFacade {
                                  + docs.map(mapHeader).joined(separator: "; "),
                                  structured: ["map_ids": docs.map(\.agentID)])
         }
-        guard ext == DocumentTypes.fileExtension else {
-            throw MCPToolError("FreeMind opens .fmind maps and imports \(DocumentTypes.importableExtensions.joined(separator: ", ")) files.")
+        guard ext == DocumentTypes.fileExtension || ext == DocumentTypes.mindManagerExtension else {
+            throw MCPToolError("FreeMind opens .fmind and .mmap maps and imports \(DocumentTypes.importableExtensions.joined(separator: ", ")) files.")
         }
         let doc: NSDocument = try await withCheckedThrowingContinuation { continuation in
             controller.openDocument(withContentsOf: url, display: true) { doc, _, error in
@@ -442,9 +442,13 @@ extension MCPFacade {
         let doc = try writableDocument(args)
         let url: URL
         let operation: NSDocument.SaveOperationType
+        var type = DocumentTypes.map
         if let raw = try args.string("path"), !raw.isEmpty {
             var target = URL(fileURLWithPath: (raw as NSString).expandingTildeInPath).standardizedFileURL
-            if target.pathExtension.lowercased() != DocumentTypes.fileExtension {
+            let ext = target.pathExtension.lowercased()
+            if ext == DocumentTypes.mindManagerExtension, doc.mindManager != nil {
+                type = DocumentTypes.isMindManager(doc.fileType) ? doc.fileType! : DocumentTypes.mindManager
+            } else if ext != DocumentTypes.fileExtension {
                 target.appendPathExtension(DocumentTypes.fileExtension)
             }
             if target != doc.fileURL?.standardizedFileURL, FileManager.default.fileExists(atPath: target.path) {
@@ -458,9 +462,10 @@ extension MCPFacade {
             }
             url = fileURL
             operation = .saveOperation
+            if DocumentTypes.isMindManager(doc.fileType) { type = doc.fileType! }
         }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            doc.save(to: url, ofType: DocumentTypes.map, for: operation) { error in
+            doc.save(to: url, ofType: type, for: operation) { error in
                 if let error { continuation.resume(throwing: error) } else { continuation.resume() }
             }
         }
