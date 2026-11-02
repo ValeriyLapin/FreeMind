@@ -12,6 +12,8 @@ final class MindMapDocument: NSDocument {
     let attachments = AttachmentStore()
     /// 读取时拿到的包结构，保存时在它上面增量修改，未改动的附件不会被重写。
     private var packageWrapper: FileWrapper?
+    private(set) var mindManager: MindManagerSession?
+    private var mindManagerType = DocumentTypes.mindManager
     /// 打开文档时要恢复的视图状态。
     private(set) var restoredViewState: ViewState?
     /// MCP 工具里指代这份文档的编号（`m1`、`m2`…），只在本次运行内有效。
@@ -31,7 +33,13 @@ final class MindMapDocument: NSDocument {
     override class var autosavesInPlace: Bool { true }
 
     override class var readableTypes: [String] {
-        [DocumentTypes.map, DocumentTypes.markdown, DocumentTypes.opml, DocumentTypes.xmind]
+        [DocumentTypes.map, DocumentTypes.markdown, DocumentTypes.opml, DocumentTypes.xmind] + DocumentTypes.mindManagerTypes
+    }
+
+    override func writableTypes(for saveOperation: NSDocument.SaveOperationType) -> [String] {
+        let native = super.writableTypes(for: saveOperation)
+        guard mindManager != nil else { return native }
+        return [mindManagerType] + native.filter { $0 != mindManagerType }
     }
 
     override class var writableTypes: [String] { [DocumentTypes.map] }
@@ -61,6 +69,21 @@ final class MindMapDocument: NSDocument {
     }
 
     override func read(from url: URL, ofType typeName: String) throws {
+        if DocumentTypes.isMindManager(typeName) {
+            let data = try Data(contentsOf: url)
+            let session = try MindManagerSession.open(data: data, fileName: url.lastPathComponent,
+                                                      knownPassword: mindManager?.password)
+            attachments.load(from: nil)
+            for (id, file) in session.resources {
+                attachments.add(data: file.data, name: file.name, id: id)
+            }
+            packageWrapper = nil
+            restoredViewState = nil
+            mindManager = session
+            mindManagerType = typeName
+            editor.load(session.snapshot)
+            return
+        }
         if typeName == DocumentTypes.map {
             try super.read(from: url, ofType: typeName)
             attachments.packageURL = url
@@ -85,6 +108,15 @@ final class MindMapDocument: NSDocument {
         // 正在行内编辑的文字一起保存，但不结束编辑（自动保存不能打断输入）
         let map = editor.mapForSaving
         editor.breakCoalescing()
+        if DocumentTypes.isMindManager(typeName) {
+            guard let mindManager else { throw CocoaError(.fileWriteUnsupportedScheme) }
+            let data = try mindManager.serialized(current: map, resources: { [attachments] id in
+                attachments.data(for: id).map { ResourceFile(name: attachments.fileName(for: id) ?? "file", data: $0) }
+            }, preview: { [editor, attachments] in
+                ImageExporter.pngData(layout: editor.layout, images: { attachments.image(for: $0) }, scale: 1)
+            })
+            return FileWrapper(regularFileWithContents: data)
+        }
         let content = DocumentContent(map: map, view: currentViewState())
         let data = try content.encoded()
 

@@ -542,3 +542,18 @@
 "Show relationships (⌥⌘L)" = "显示联系线（⌥⌘L）";
 "Show or hide relationships" = "显示或隐藏联系线";
 "Show or hide relationships (⌥⌘L)" = "显示或隐藏联系线（⌥⌘L）";
+
+"This file does not look like a MindManager map." = "这个文件看起来不是 MindManager 导图。";
+"This MindManager map is protected with a password." = "这个 MindManager 导图受密码保护。";
+"The password is incorrect." = "密码不正确。";
+"The password is incorrect. Try again." = "密码不正确，请重试。";
+"Enter the password to open this MindManager map." = "输入密码以打开这个 MindManager 导图。";
+"“%@” is protected with a password." = "“%@”受密码保护。";
+"The map is too large to be saved in the MindManager format." = "导图太大，无法保存为 MindManager 格式。";
+"The map could not be saved safely in the MindManager format." = "无法安全地将导图保存为 MindManager 格式。";
+"The original file was left unchanged. Use File › Duplicate to keep a copy in the FreeMind format." = "原文件保持不变。可以用“文件 › 复制”保留一份 FreeMind 格式的副本。";
+"The central topic does not match the original map." = "中心主题与原导图不一致。";
+"A topic image could not be stored in the MindManager format." = "主题图片无法保存为 MindManager 格式。";
+"The map contains characters that cannot be saved safely." = "导图包含无法安全保存的字符。";
+"The written file could not be read back." = "写入的文件无法重新读取。";
+"The written file does not match the map." = "写入的文件与导图不一致。";

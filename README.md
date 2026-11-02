@@ -70,6 +70,7 @@ open it and drag FreeMind into the Applications folder.
 
 - **Own `.fmind` format**: a macOS package that keeps attachments inside the file, so nothing gets lost when you move or share it ([format spec, in Chinese](docs/format.md)).
 - **Collapsed branches are saved in the file** and restored when you reopen it, along with the zoom level, scroll position and selection.
+- **MindManager maps**: open `.mmap` files, including password-protected ones, edit them and save them back as `.mmap`. Only the edited parts of the original file change, and every save is read back and checked ([details](docs/mindmanager.md)).
 - **Import**: Markdown, OPML, XMind (current format and XMind 8) and plain indented outlines.
 - **Export**: Markdown (optionally with attachments copied to a folder), OPML, PNG and PDF, plus printing.
 - **Finder integration**: a Quick Look extension provides thumbnails and space-bar previews for `.fmind` files; drag to pan the preview, pinch or ⌘-scroll to zoom.

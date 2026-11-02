@@ -124,6 +124,11 @@ targets:
             LSHandlerRank: Alternate
             LSItemContentTypes: [tech.xvanturing.freemind.xmind-import]
             NSDocumentClass: $(PRODUCT_MODULE_NAME).MindMapDocument
+          - CFBundleTypeName: MindManager Map
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [com.mindjet.mindmanager.map, com.mindjet.mindmanager.mmap]
+            NSDocumentClass: $(PRODUCT_MODULE_NAME).MindMapDocument
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: tech.xvanturing.freemind.map
             UTTypeDescription: FreeMind Mind Map
@@ -147,6 +152,11 @@ targets:
             UTTypeConformsTo: [public.data, public.zip-archive]
             UTTypeTagSpecification:
               public.filename-extension: [xmind]
+          - UTTypeIdentifier: com.mindjet.mindmanager.map
+            UTTypeDescription: MindManager Map
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [mmap]
 
   # ── Quick Look：Finder 空格预览 / 文件缩略图 ─────────────────────
   # 两个扩展都只编译“模型 + 布局 + 渲染”这部分代码，直接读 .fmind 包，不依赖 NSDocument。

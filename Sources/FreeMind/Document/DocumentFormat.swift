@@ -7,6 +7,16 @@ enum DocumentTypes {
     static let opml = "org.opml.opml"
     static let xmind = "tech.xvanturing.freemind.xmind-import"
 
+    static let mindManager = "com.mindjet.mindmanager.map"
+    static let mindManagerAlternate = "com.mindjet.mindmanager.mmap"
+    static let mindManagerTypes = [mindManager, mindManagerAlternate]
+    static let mindManagerExtension = "mmap"
+
+    static func isMindManager(_ type: String?) -> Bool {
+        guard let type else { return false }
+        return mindManagerTypes.contains(type)
+    }
+
     static let fileExtension = "fmind"
 
     static var mapUTType: UTType { UTType(exportedAs: map, conformingTo: .package) }

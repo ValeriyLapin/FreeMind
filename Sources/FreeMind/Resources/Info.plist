@@ -68,6 +68,21 @@
 			<key>NSDocumentClass</key>
 			<string>$(PRODUCT_MODULE_NAME).MindMapDocument</string>
 		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>MindManager Map</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.mindjet.mindmanager.map</string>
+				<string>com.mindjet.mindmanager.mmap</string>
+			</array>
+			<key>NSDocumentClass</key>
+			<string>$(PRODUCT_MODULE_NAME).MindMapDocument</string>
+		</dict>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
@@ -179,6 +194,23 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>xmind</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MindManager Map</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.mindjet.mindmanager.map</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mmap</string>
 				</array>
 			</dict>
 		</dict>
