@@ -5,7 +5,7 @@ enum DocumentTypes {
     static let map = "tech.xvanturing.freemind.map"
     static let markdown = "net.daringfireball.markdown"
     static let opml = "org.opml.opml"
-    static let xmind = "tech.xvanturing.freemind.xmind-import"
+    static let xmind = "org.xmind.openformat.xmind"
 
     static let mindManager = "com.mindjet.mindmanager.map"
     static let mindManagerAlternate = "com.mindjet.mindmanager.mmap"

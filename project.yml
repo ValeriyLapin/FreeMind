@@ -122,7 +122,7 @@ targets:
           - CFBundleTypeName: XMind Workbook
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
-            LSItemContentTypes: [tech.xvanturing.freemind.xmind-import]
+            LSItemContentTypes: [org.xmind.openformat.xmind]
             NSDocumentClass: $(PRODUCT_MODULE_NAME).MindMapDocument
           - CFBundleTypeName: MindManager Map
             CFBundleTypeRole: Editor
@@ -147,9 +147,9 @@ targets:
             UTTypeConformsTo: [public.xml]
             UTTypeTagSpecification:
               public.filename-extension: [opml]
-          - UTTypeIdentifier: tech.xvanturing.freemind.xmind-import
+          - UTTypeIdentifier: org.xmind.openformat.xmind
             UTTypeDescription: XMind Workbook
-            UTTypeConformsTo: [public.data, public.zip-archive]
+            UTTypeConformsTo: [public.zip-archive, public.composite-content]
             UTTypeTagSpecification:
               public.filename-extension: [xmind]
           - UTTypeIdentifier: com.mindjet.mindmanager.map

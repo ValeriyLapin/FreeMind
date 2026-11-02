@@ -63,7 +63,7 @@
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>tech.xvanturing.freemind.xmind-import</string>
+				<string>org.xmind.openformat.xmind</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>$(PRODUCT_MODULE_NAME).MindMapDocument</string>
@@ -182,13 +182,13 @@
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
-				<string>public.data</string>
 				<string>public.zip-archive</string>
+				<string>public.composite-content</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>XMind Workbook</string>
 			<key>UTTypeIdentifier</key>
-			<string>tech.xvanturing.freemind.xmind-import</string>
+			<string>org.xmind.openformat.xmind</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
