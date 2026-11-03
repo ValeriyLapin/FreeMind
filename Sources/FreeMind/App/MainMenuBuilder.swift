@@ -292,6 +292,7 @@ enum MainMenuBuilder {
 /// 主题菜单：每次打开时刷新（自定义主题可能有增删）。
 final class ThemeMenu: NSMenu, NSMenuDelegate {
     var withPreviews = false
+    var reservesFirstItem = false
 
     override init(title: String) {
         super.init(title: title)
@@ -304,6 +305,7 @@ final class ThemeMenu: NSMenu, NSMenuDelegate {
 
     func rebuild() {
         removeAllItems()
+        if reservesFirstItem { addItem(NSMenuItem(title: "", action: nil, keyEquivalent: "")) }
         let custom = ThemeLibrary.shared.customThemes
         for theme in Theme.builtins { addItem(item(for: theme)) }
         if !custom.isEmpty {

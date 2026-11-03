@@ -163,6 +163,12 @@ final class MapWindowController: NSWindowController, NSToolbarDelegate, NSMenuIt
             item.paletteLabel = label
             item.toolTip = tip
             item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+            if let themes = menu as? ThemeMenu {
+                themes.reservesFirstItem = true
+                themes.rebuild()
+            } else {
+                menu.insertItem(NSMenuItem(title: "", action: nil, keyEquivalent: ""), at: 0)
+            }
             item.menu = menu
             item.showsIndicator = true
             return item
