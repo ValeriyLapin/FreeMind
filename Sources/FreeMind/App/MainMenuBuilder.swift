@@ -76,6 +76,7 @@ enum MainMenuBuilder {
         add(menu, L("Close"), #selector(NSWindow.performClose(_:)), "w")
         add(menu, L("Save…"), #selector(NSDocument.save(_:)), "s")
         add(menu, L("Duplicate"), #selector(NSDocument.duplicate(_:)), "s", [.command, .shift])
+        add(menu, L("Save As…"), #selector(NSDocument.saveAs(_:)), "s", [.command, .option, .shift])
         add(menu, L("Rename…"), #selector(NSDocument.rename(_:)))
         add(menu, L("Move To…"), #selector(NSDocument.move(_:)))
         let revert = NSMenuItem(title: L("Revert To"), action: nil, keyEquivalent: "")

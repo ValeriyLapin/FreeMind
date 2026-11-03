@@ -16,4 +16,15 @@ final class DocumentTypesTests: XCTestCase {
             XCTAssertTrue(MindMapDocument.readableTypes.contains(type), ext)
         }
     }
+
+    func testSaveAsOffersEveryEditableFormat() throws {
+        let file = try XCTUnwrap(MainMenuBuilder.build().items.compactMap(\.submenu).first { $0.title == L("File") })
+        let item = try XCTUnwrap(file.items.first { $0.action == #selector(NSDocument.saveAs(_:)) })
+        XCTAssertEqual(item.keyEquivalent, "s")
+        XCTAssertEqual(item.keyEquivalentModifierMask, [.command, .option, .shift])
+        let doc = MindMapDocument()
+        XCTAssertTrue(doc.validateUserInterfaceItem(item))
+        XCTAssertEqual(Set(doc.writableTypes(for: .saveAsOperation)),
+                       [DocumentTypes.map, DocumentTypes.mindManager, DocumentTypes.xmind])
+    }
 }
