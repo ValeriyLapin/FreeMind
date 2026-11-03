@@ -14,6 +14,7 @@ final class MindMapDocument: NSDocument {
     private var packageWrapper: FileWrapper?
     private(set) var mindManager: MindManagerSession?
     private var mindManagerType = DocumentTypes.mindManager
+    private(set) var xmind: XMindSession?
     /// 打开文档时要恢复的视图状态。
     private(set) var restoredViewState: ViewState?
     /// MCP 工具里指代这份文档的编号（`m1`、`m2`…），只在本次运行内有效。
@@ -37,7 +38,7 @@ final class MindMapDocument: NSDocument {
     }
 
     override func writableTypes(for saveOperation: NSDocument.SaveOperationType) -> [String] {
-        [DocumentTypes.map, mindManagerType]
+        [DocumentTypes.map, mindManagerType, DocumentTypes.xmind]
     }
 
     override class var writableTypes: [String] { [DocumentTypes.map] }
@@ -82,6 +83,18 @@ final class MindMapDocument: NSDocument {
             editor.load(session.snapshot)
             return
         }
+        if typeName == DocumentTypes.xmind, let session = try? XMindSession(data: Data(contentsOf: url)),
+           session.sheets.count == 1 {
+            attachments.load(from: nil)
+            for (id, file) in session.resources {
+                attachments.add(data: file.data, name: file.name, id: id)
+            }
+            packageWrapper = nil
+            restoredViewState = nil
+            xmind = session
+            editor.load(session.snapshot)
+            return
+        }
         if typeName == DocumentTypes.map {
             try super.read(from: url, ofType: typeName)
             attachments.packageURL = url
@@ -109,12 +122,15 @@ final class MindMapDocument: NSDocument {
         if DocumentTypes.isMindManager(typeName) {
             let session = try mindManager.flatMap { $0.snapshot.root.id == map.root.id ? $0 : nil }
                 ?? MindManagerSession.blank(rootID: map.root.id)
-            let data = try session.serialized(current: map, resources: { [attachments] id in
-                attachments.data(for: id).map { ResourceFile(name: attachments.fileName(for: id) ?? "file", data: $0) }
-            }, preview: { [editor, attachments] in
-                ImageExporter.pngData(layout: editor.layout, images: { attachments.image(for: $0) }, scale: 1)
-            })
+            let data = try session.serialized(current: map, resources: resourceFile, preview: preview)
             mindManager = session
+            return FileWrapper(regularFileWithContents: data)
+        }
+        if typeName == DocumentTypes.xmind {
+            let session = try xmind.flatMap { $0.snapshot.root.id == map.root.id ? $0 : nil }
+                ?? XMindSession.blank(rootID: map.root.id, sheetTitle: displayName ?? map.root.title)
+            let data = try session.serialized(current: map, resources: resourceFile, preview: preview)
+            xmind = session
             return FileWrapper(regularFileWithContents: data)
         }
         let content = DocumentContent(map: map, view: currentViewState())
@@ -128,6 +144,14 @@ final class MindMapDocument: NSDocument {
         attachments.sync(into: root, referenced: map.referencedResourceIDs)
         packageWrapper = root
         return root
+    }
+
+    private func resourceFile(_ id: UUID) -> ResourceFile? {
+        attachments.data(for: id).map { ResourceFile(name: attachments.fileName(for: id) ?? "file", data: $0) }
+    }
+
+    private func preview() -> Data? {
+        ImageExporter.pngData(layout: editor.layout, images: { [attachments] in attachments.image(for: $0) }, scale: 1)
     }
 
     /// 关闭前先提交行内编辑，避免输入了一半的标题丢失。

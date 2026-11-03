@@ -101,7 +101,7 @@ targets:
         SUScheduledCheckInterval: 86400
         # ── 文档类型 ─────────────────────────────────────────────
         # .fmind 是本应用的专属格式：一个 package（目录包），Finder 里显示为单个文件。
-        # Markdown / OPML / XMind 只声明为 Viewer：打开时导入成新的未命名导图。
+        # Markdown / OPML 只声明为 Viewer：打开时导入成新的未命名导图。
         CFBundleDocumentTypes:
           - CFBundleTypeName: FreeMind Mind Map
             CFBundleTypeRole: Editor
@@ -120,7 +120,7 @@ targets:
             LSItemContentTypes: [org.opml.opml]
             NSDocumentClass: $(PRODUCT_MODULE_NAME).MindMapDocument
           - CFBundleTypeName: XMind Workbook
-            CFBundleTypeRole: Viewer
+            CFBundleTypeRole: Editor
             LSHandlerRank: Alternate
             LSItemContentTypes: [org.xmind.openformat.xmind]
             NSDocumentClass: $(PRODUCT_MODULE_NAME).MindMapDocument

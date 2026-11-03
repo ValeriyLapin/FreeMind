@@ -292,7 +292,7 @@ final class MindManagerTests: XCTestCase {
         doc.editor.setTitle(second.id, "Second edited")
         let again = try XCTUnwrap(try doc.fileWrapper(ofType: DocumentTypes.mindManager).regularFileContents)
         XCTAssertEqual(try MindManagerSession(data: again, password: nil).snapshot.topic(second.id)?.title, "Second edited")
-        XCTAssertEqual(doc.writableTypes(for: .saveAsOperation), [DocumentTypes.map, DocumentTypes.mindManager])
+        XCTAssertEqual(doc.writableTypes(for: .saveAsOperation), [DocumentTypes.map, DocumentTypes.mindManager, DocumentTypes.xmind])
     }
 
     func testNewImageAndAttachmentAreStoredInBin() throws {

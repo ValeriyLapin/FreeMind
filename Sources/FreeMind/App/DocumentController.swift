@@ -45,7 +45,8 @@ final class DocumentController: NSDocumentController {
     override func openDocument(withContentsOf url: URL, display displayDocument: Bool,
                                completionHandler: @escaping (NSDocument?, Bool, Error?) -> Void) {
         let ext = url.pathExtension.lowercased()
-        guard DocumentTypes.importableExtensions.contains(ext) else {
+        let editable = ext == DocumentTypes.xmindExtension && XMindSession.canEdit(url)
+        guard DocumentTypes.importableExtensions.contains(ext), !editable else {
             super.openDocument(withContentsOf: url, display: displayDocument, completionHandler: completionHandler)
             return
         }

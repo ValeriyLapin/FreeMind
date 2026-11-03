@@ -307,7 +307,7 @@ enum XMindImporter {
                                                "wrong": "cross", "right": "check", "idea": "idea", "info": "idea",
                                                "heart": "heart", "thumbs-up": "like", "thumbs-down": "dislike",
                                                "like": "like", "dislike": "dislike",
-                                               "pin": "pin", "time": "time", "money": "money"]
+                                               "pin": "pin", "time": "time", "hourglass": "time", "money": "money"]
                 if let k = table[String(id.dropFirst(7))] { mapped = "symbol-\(k)" }
             } else if id.hasPrefix("people-") {
                 mapped = "symbol-person"

@@ -411,7 +411,8 @@ extension MCPFacade {
         guard FileManager.default.fileExists(atPath: url.path) else { throw MCPToolError("No file at \(url.path).") }
         let controller = DocumentController.sharedController
         let ext = url.pathExtension.lowercased()
-        if DocumentTypes.importableExtensions.contains(ext) {
+        let editableXMind = ext == DocumentTypes.xmindExtension && XMindSession.canEdit(url)
+        if DocumentTypes.importableExtensions.contains(ext), !editableXMind {
             // 导入：自己处理，出错时把原因告诉 Agent，而不是在 App 里弹警告框
             let results = try Importer.importAll(at: url)
             let docs = results.compactMap { result in
@@ -424,8 +425,8 @@ extension MCPFacade {
                                  + docs.map(mapHeader).joined(separator: "; "),
                                  structured: ["map_ids": docs.map(\.agentID)])
         }
-        guard ext == DocumentTypes.fileExtension || ext == DocumentTypes.mindManagerExtension else {
-            throw MCPToolError("FreeMind opens .fmind and .mmap maps and imports \(DocumentTypes.importableExtensions.joined(separator: ", ")) files.")
+        guard ext == DocumentTypes.fileExtension || ext == DocumentTypes.mindManagerExtension || editableXMind else {
+            throw MCPToolError("FreeMind opens .fmind, .mmap and .xmind maps and imports \(DocumentTypes.importableExtensions.joined(separator: ", ")) files.")
         }
         let doc: NSDocument = try await withCheckedThrowingContinuation { continuation in
             controller.openDocument(withContentsOf: url, display: true) { doc, _, error in
@@ -448,6 +449,8 @@ extension MCPFacade {
             let ext = target.pathExtension.lowercased()
             if ext == DocumentTypes.mindManagerExtension {
                 type = DocumentTypes.isMindManager(doc.fileType) ? doc.fileType! : DocumentTypes.mindManager
+            } else if ext == DocumentTypes.xmindExtension {
+                type = DocumentTypes.xmind
             } else if ext != DocumentTypes.fileExtension {
                 target.appendPathExtension(DocumentTypes.fileExtension)
             }
@@ -462,7 +465,7 @@ extension MCPFacade {
             }
             url = fileURL
             operation = .saveOperation
-            if DocumentTypes.isMindManager(doc.fileType) { type = doc.fileType! }
+            if DocumentTypes.isMindManager(doc.fileType) || doc.fileType == DocumentTypes.xmind { type = doc.fileType! }
         }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             doc.save(to: url, ofType: type, for: operation) { error in
