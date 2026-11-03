@@ -29,7 +29,7 @@ Any map, including a new one or one imported from another format, can be saved a
 | Attachments | Attachments | New attachments are stored in `bin/`. |
 | Relationships | Relationships | Adding, removing and reconnecting relationships is saved. Labels are shown, but editing a label does not change the file. |
 
-Not saved to `.mmap`: FreeMind labels, stars, relationship labels, topic styles, structure, theme and boundaries. These edits stay in the editor until the window is closed, but the `.mmap` file does not change because of them. Save a copy in the FreeMind format to keep them.
+Not saved to `.mmap`: FreeMind labels, stars, relationship labels, topic styles, structure, theme and boundaries. These edits stay in the editor until the window is closed, but the `.mmap` file does not change because of them. After the first File › Save or Save As that would lose such changes, FreeMind offers to save a copy in the FreeMind format.
 
 ## Password-protected maps
 

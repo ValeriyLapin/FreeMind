@@ -28,4 +28,4 @@ Workbooks with more than one sheet and XMind 8 files are still imported as new u
 | Relationships | Relationships | Including labels. Control points and styles of existing relationships are kept. |
 | Structure of the central topic | Structure | |
 
-Not saved to `.xmind`: FreeMind theme, topic styles other than boundaries, spacing, line style, topic width and relationship styles.
+Not saved to `.xmind`: FreeMind theme, topic styles other than boundaries, spacing, line style, topic width and relationship styles. After the first File › Save or Save As in this format that would lose such changes, FreeMind offers to save a copy in the FreeMind format.

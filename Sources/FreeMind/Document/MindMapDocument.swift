@@ -15,6 +15,7 @@ final class MindMapDocument: NSDocument {
     private(set) var mindManager: MindManagerSession?
     private var mindManagerType = DocumentTypes.mindManager
     private(set) var xmind: XMindSession?
+    private var offeredNativeCopy = false
     /// 打开文档时要恢复的视图状态。
     private(set) var restoredViewState: ViewState?
     /// MCP 工具里指代这份文档的编号（`m1`、`m2`…），只在本次运行内有效。
@@ -152,6 +153,17 @@ final class MindMapDocument: NSDocument {
 
     private func preview() -> Data? {
         ImageExporter.pngData(layout: editor.layout, images: { [attachments] in attachments.image(for: $0) }, scale: 1)
+    }
+
+    override func save(to url: URL, ofType typeName: String, for saveOperation: NSDocument.SaveOperationType,
+                       completionHandler: @escaping (Error?) -> Void) {
+        super.save(to: url, ofType: typeName, for: saveOperation) { [weak self] error in
+            completionHandler(error)
+            guard error == nil, let self, !offeredNativeCopy, typeName != DocumentTypes.map,
+                  saveOperation == .saveOperation || saveOperation == .saveAsOperation else { return }
+            offeredNativeCopy = true
+            DispatchQueue.main.async { self.offerNativeCopyIfNeeded(type: typeName) }
+        }
     }
 
     /// 关闭前先提交行内编辑，避免输入了一半的标题丢失。

@@ -557,3 +557,14 @@
 "The map contains characters that cannot be saved safely." = "导图包含无法安全保存的字符。";
 "The written file could not be read back." = "写入的文件无法重新读取。";
 "The written file does not match the map." = "写入的文件与导图不一致。";
+"Topic styles" = "主题样式";
+"Some markers" = "部分标记";
+"Boundaries" = "外框";
+"More than one link or attachment on a topic" = "同一主题上的多个链接或附件";
+"Theme and layout" = "风格和布局";
+"Relationship styles" = "联系线样式";
+"Relationship labels" = "联系线标签";
+"Some changes are not stored in the %@ format." = "部分改动无法保存为 %@ 格式。";
+"Save a copy in the FreeMind format to keep them." = "另存一份 FreeMind 格式的副本即可保留这些改动。";
+"Save FreeMind Copy…" = "存储 FreeMind 副本…";
+"Not Now" = "以后再说";

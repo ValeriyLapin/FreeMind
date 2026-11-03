@@ -175,6 +175,21 @@ final class XMindTests: XCTestCase {
         XCTAssertTrue(doc.writableTypes(for: .saveAsOperation).contains(DocumentTypes.xmind))
     }
 
+    func testFormatLossListsOnlyChangesTheFormatDrops() throws {
+        let session = try XMindSession(data: try Self.makeWorkbook())
+        var map = session.snapshot
+        XCTAssertEqual(FormatLoss.features(of: map, type: DocumentTypes.xmind, baseline: session.snapshot), [])
+        _ = map.update(map.root.children[0].id) { $0.labels = ["new"]; $0.style.bold = true }
+        XCTAssertEqual(FormatLoss.features(of: map, type: DocumentTypes.xmind, baseline: session.snapshot), [L("Topic styles")])
+        XCTAssertEqual(FormatLoss.features(of: map, type: DocumentTypes.mindManager, baseline: session.snapshot),
+                       [L("Topic styles"), L("Labels")])
+        var fresh = MindMap(root: Topic(title: "Plan", children: [Topic(title: "A", markers: [MarkerID("star-red")])]),
+                            theme: Preferences.shared.defaultTheme)
+        XCTAssertEqual(FormatLoss.features(of: fresh, type: DocumentTypes.xmind, baseline: nil), [])
+        fresh.structure = .orgChart
+        XCTAssertEqual(FormatLoss.features(of: fresh, type: DocumentTypes.mindManager, baseline: nil), [L("Some markers"), L("Structure")])
+    }
+
     func testRealXMindSamples() throws {
         let env = ProcessInfo.processInfo.environment
         guard let list = env["FREEMIND_XMIND_SAMPLES"], !list.isEmpty else { throw XCTSkip("FREEMIND_XMIND_SAMPLES not set") }
