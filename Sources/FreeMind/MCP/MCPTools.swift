@@ -295,7 +295,7 @@ enum MCPTools {
             description: "Save a map. Maps that already have a file are also saved automatically; a new map needs 'path' the first time. Existing files are never overwritten.",
             inputSchema: MCPSchema.object([
                 "map_id": mapID,
-                "path": MCPSchema.string("Where to save, such as ~/Documents/Plan.fmind (.fmind is added if missing; a map opened from .mmap can also be saved to a .mmap path)"),
+                "path": MCPSchema.string("Where to save, such as ~/Documents/Plan.fmind (.fmind is added if missing; use a .mmap path to save in the MindManager format)"),
             ]),
             tier: .write
         ) { args in try await facade.saveMap(args) })

@@ -59,8 +59,8 @@ final class MindManagerTests: XCTestCase {
         xmlns:cor="http://schemas.mindjet.com/MindManager/Core/2003" xmlns:pri="http://schemas.mindjet.com/MindManager/Primitive/2003" \
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><cor:Custom Index="0" Uri="http://example.com/addin" Dirty="0000000000000000"/>\
         <ap:OneTopic>\(rootTopic)</ap:OneTopic><ap:Relationships><ap:Relationship Dirty="0000000000000001" OId="\(oid(relation))" Gen="0000000000000000">\
-        <ap:ConnectionGroup Index="0"><ap:Connection Dirty="0000000000000001" CX="1.0" CY="2.0"><cor:ObjectReference OIdRef="\(oid(a1))"/></ap:Connection></ap:ConnectionGroup>\
-        <ap:ConnectionGroup Index="1"><ap:Connection Dirty="0000000000000001" CX="3.0" CY="4.0"><cor:ObjectReference OIdRef="\(oid(b1))"/></ap:Connection></ap:ConnectionGroup>\
+        <ap:ConnectionGroup Index="0"><ap:Connection Dirty="0000000000000001" CX="1.0" CY="2.0"><ap:ObjectReference OIdRef="\(oid(a1))"/></ap:Connection></ap:ConnectionGroup>\
+        <ap:ConnectionGroup Index="1"><ap:Connection Dirty="0000000000000001" CX="3.0" CY="4.0"><ap:ObjectReference OIdRef="\(oid(b1))"/></ap:Connection></ap:ConnectionGroup>\
         <ap:RelationshipViewGroup ViewIndex="0"/><ap:AutoRoute Dirty="0000000000000001" AutoRouting="true"/></ap:Relationship></ap:Relationships>\
         <ap:StyleGroup/><ap:MapViewGroup ViewIndex="0" RowIndex="0" ColumnIndex="0"><ap:Selection Dirty="0000000000000001">\
         <ap:ObjectReference OIdRef="\(oid(a1))"/><ap:ObjectReference OIdRef="\(oid(a2))"/></ap:Selection>\
@@ -251,7 +251,7 @@ final class MindManagerTests: XCTestCase {
         try doc.read(from: url, ofType: DocumentTypes.mindManager)
         XCTAssertEqual(doc.editor.map.root.children.map(\.title), ["Alpha", "Beta", "Gamma", "Floating"])
         XCTAssertEqual(doc.attachments.data(for: Self.id(Self.image)), Self.tinyPNG)
-        XCTAssertEqual(doc.writableTypes(for: .saveOperation).first, DocumentTypes.mindManager)
+        XCTAssertTrue(doc.writableTypes(for: .saveOperation).contains(DocumentTypes.mindManager))
         XCTAssertEqual(try doc.fileWrapper(ofType: DocumentTypes.mindManager).regularFileContents, data)
 
         doc.editor.setTitle(Self.id(Self.beta), "Beta edited")
@@ -260,6 +260,39 @@ final class MindManagerTests: XCTestCase {
         XCTAssertEqual(reread.snapshot.topic(Self.id(Self.beta))?.title, "Beta edited")
         XCTAssertEqual(reread.snapshot.topic(Self.id(Self.gamma))?.image?.id, Self.id(Self.image))
         XCTAssertNotNil(try ZipArchive(data: written).entry(named: "Preview.png"))
+    }
+
+    func testNewMapIsSavedAsMindManagerMap() throws {
+        let doc = MindMapDocument()
+        var map = doc.editor.map
+        map.root.title = "Plan\u{0}"
+        var first = Topic(title: "First\nline two", note: "Note", link: "https://example.com",
+                          markers: [MarkerID("priority-1"), MarkerID("flag-red")])
+        let imageID = doc.attachments.add(data: Self.tinyPNG, name: "pic.png")
+        first.image = TopicImage(id: imageID, name: "pic.png", width: 40, height: 30)
+        let fileID = doc.attachments.add(data: Data("hello".utf8), name: "readme.txt")
+        first.attachments = [Attachment(id: fileID, name: "readme.txt", size: 5)]
+        first.children = [Topic(title: "Child")]
+        let second = Topic(title: "Second")
+        map.root.children = [first, second]
+        map.relationships = [Relationship(from: first.children[0].id, to: second.id)]
+        doc.editor.load(map)
+
+        let written = try XCTUnwrap(try doc.fileWrapper(ofType: DocumentTypes.mindManager).regularFileContents)
+        let reread = try MindManagerSession(data: written, password: nil)
+        XCTAssertEqual(MindManagerProjection(reread.snapshot), MindManagerProjection(map))
+        XCTAssertEqual(reread.snapshot.root.id, map.root.id)
+        XCTAssertEqual(reread.snapshot.root.title, "Plan")
+        XCTAssertEqual(reread.resources[imageID]?.data, Self.tinyPNG)
+        XCTAssertEqual(reread.resources[fileID]?.data, Data("hello".utf8))
+        XCTAssertNotNil(try ZipArchive(data: written).entry(named: "Preview.png"))
+        let document = try MindManagerXML.parse(try XCTUnwrap(try ZipArchive(data: written).contents(of: MindManagerPackage.documentEntry)))
+        XCTAssertNotNil(document.rootElement()?.attribute(forLocalName: "schemaLocation", uri: MindManagerXML.xsi))
+
+        doc.editor.setTitle(second.id, "Second edited")
+        let again = try XCTUnwrap(try doc.fileWrapper(ofType: DocumentTypes.mindManager).regularFileContents)
+        XCTAssertEqual(try MindManagerSession(data: again, password: nil).snapshot.topic(second.id)?.title, "Second edited")
+        XCTAssertEqual(doc.writableTypes(for: .saveAsOperation), [DocumentTypes.map, DocumentTypes.mindManager])
     }
 
     func testNewImageAndAttachmentAreStoredInBin() throws {
@@ -310,6 +343,20 @@ final class MindManagerTests: XCTestCase {
         let written = try session.serialized(current: map, resources: Self.resources(of: session), preview: { nil })
         XCTAssertTrue(MindManagerPackage.looksLikeXML(written))
         XCTAssertEqual(try MindManagerSession(data: written, password: nil).snapshot.topic(Self.id(Self.alpha))?.title, "Plain")
+    }
+
+    func testMissingNamespaceDeclarationsAreAdded() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?><ap:Map OId="\(Self.oid(99))" xmlns:ap="\(MindManagerXML.ap)"><ap:OneTopic>\
+        <ap:Topic OId="\(Self.oid(Self.root))"><ap:Text PlainText="Root" ReadOnly="false"><ap:Font/></ap:Text></ap:Topic></ap:OneTopic></ap:Map>
+        """
+        var archive = ZipArchive()
+        try archive.set(Data(xml.utf8), for: MindManagerPackage.documentEntry)
+        let session = try MindManagerSession(data: archive.serialized(), password: nil)
+        var map = session.snapshot
+        map.root.children = [Topic(title: "Flagged", markers: [MarkerID("flag-red")])]
+        let written = try session.serialized(current: map, resources: Self.resources(of: session), preview: { nil })
+        XCTAssertEqual(try MindManagerSession(data: written, password: nil).snapshot.root.children.first?.markers, [MarkerID("flag-red")])
     }
 
     func testBrokenCharactersAreTolerated() throws {

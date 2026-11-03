@@ -37,9 +37,7 @@ final class MindMapDocument: NSDocument {
     }
 
     override func writableTypes(for saveOperation: NSDocument.SaveOperationType) -> [String] {
-        let native = super.writableTypes(for: saveOperation)
-        guard mindManager != nil else { return native }
-        return [mindManagerType] + native.filter { $0 != mindManagerType }
+        [DocumentTypes.map, mindManagerType]
     }
 
     override class var writableTypes: [String] { [DocumentTypes.map] }
@@ -109,12 +107,14 @@ final class MindMapDocument: NSDocument {
         let map = editor.mapForSaving
         editor.breakCoalescing()
         if DocumentTypes.isMindManager(typeName) {
-            guard let mindManager else { throw CocoaError(.fileWriteUnsupportedScheme) }
-            let data = try mindManager.serialized(current: map, resources: { [attachments] id in
+            let session = try mindManager.flatMap { $0.snapshot.root.id == map.root.id ? $0 : nil }
+                ?? MindManagerSession.blank(rootID: map.root.id)
+            let data = try session.serialized(current: map, resources: { [attachments] id in
                 attachments.data(for: id).map { ResourceFile(name: attachments.fileName(for: id) ?? "file", data: $0) }
             }, preview: { [editor, attachments] in
                 ImageExporter.pngData(layout: editor.layout, images: { attachments.image(for: $0) }, scale: 1)
             })
+            mindManager = session
             return FileWrapper(regularFileWithContents: data)
         }
         let content = DocumentContent(map: map, view: currentViewState())

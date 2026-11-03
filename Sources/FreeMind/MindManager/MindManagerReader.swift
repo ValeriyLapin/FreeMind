@@ -201,7 +201,7 @@ enum MindManagerReader {
         let groups = relationship.aps("ConnectionGroup")
         func end(_ i: Int) -> UUID? {
             let group = groups.first { $0.attr("Index") == "\(i)" } ?? (groups.count > i ? groups[i] : nil)
-            let ref = group?.ap("Connection")?.corChild("ObjectReference")?.attr("OIdRef")
+            let ref = group?.ap("Connection").flatMap(MindManagerXML.objectReference)?.attr("OIdRef")
             return ref.flatMap { index.topicIDsByOId[$0] }
         }
         guard let a = end(0), let b = end(1) else { return nil }

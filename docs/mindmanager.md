@@ -9,6 +9,10 @@ FreeMind opens MindManager `.mmap` files directly and saves them back in the sam
 - Unchanged entries of the ZIP package are copied as they are, without recompressing them.
 - After writing, FreeMind reads the new file back and compares it with the map in the editor. If anything differs, the save fails, the original file stays unchanged, and the error names the first difference. Use File › Duplicate to keep a copy in the FreeMind format in that case.
 
+## Saving other maps as `.mmap`
+
+Any map, including a new one or one imported from another format, can be saved as `.mmap` with File › Save As or File › Duplicate. FreeMind writes a minimal MindManager map and adds the topics, notes, links, markers, images, attachments and relationships listed below. MindManager applies its default style to such a map. The same read-back check runs after every save.
+
 ## What is read and written
 
 | MindManager | FreeMind | Notes |

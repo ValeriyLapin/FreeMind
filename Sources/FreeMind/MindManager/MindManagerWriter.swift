@@ -45,11 +45,12 @@ struct MindManagerProjection: Equatable {
 
     init(_ map: MindMap, floating: Set<UUID> = []) {
         func node(_ t: Topic) -> Node {
-            Node(id: t.id, title: MindManagerReader.normalizedNewlines(t.title), collapsed: t.collapsed && !t.children.isEmpty,
-                 note: MindManagerReader.normalizedNote(t.note), link: t.link ?? "",
+            Node(id: t.id, title: MindManagerReader.normalizedNewlines(MindManagerXML.xmlSafe(t.title)),
+                 collapsed: t.collapsed && !t.children.isEmpty,
+                 note: MindManagerReader.normalizedNote(MindManagerXML.xmlSafe(t.note)), link: MindManagerXML.xmlSafe(t.link ?? ""),
                  markers: t.markers.filter(MindManagerMarkers.isPersistable).sorted(),
                  image: t.image.map { "\($0.id.uuidString) \(MindManagerXML.number($0.width)) \(MindManagerXML.number($0.height))" },
-                 attachments: t.attachments.map { "\($0.id.uuidString) \($0.name)" },
+                 attachments: t.attachments.map { "\($0.id.uuidString) \(MindManagerXML.xmlSafe($0.name))" },
                  children: (t.children.filter { !floating.contains($0.id) } + t.children.filter { floating.contains($0.id) })
                     .map(node))
         }
@@ -239,7 +240,7 @@ enum MindManagerWriter {
         html.addNamespace(XMLNode.namespace(withName: "", stringValue: MindManagerXML.xhtml) as! XMLNode)
         for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
             let p = XMLElement(name: "p", uri: MindManagerXML.xhtml)
-            p.stringValue = String(line)
+            p.stringValue = MindManagerXML.xmlSafe(String(line))
             html.addChild(p)
         }
         data.addChild(html)
@@ -445,7 +446,7 @@ enum MindManagerWriter {
             for n in 0..<2 {
                 let group = MindManagerXML.element("ConnectionGroup", [("Index", "\(n)")])
                 let connection = MindManagerXML.element("Connection", [("Dirty", MindManagerXML.dirty)])
-                let ref = XMLElement(name: "cor:ObjectReference", uri: MindManagerXML.cor)
+                let ref = MindManagerXML.element("ObjectReference")
                 connection.addChild(ref)
                 group.addChild(connection)
                 element.addChild(group)
@@ -462,7 +463,7 @@ enum MindManagerWriter {
         let groups = element.aps("ConnectionGroup")
         for (n, id) in [from, to].enumerated() where n < groups.count {
             let group = groups.first { $0.attr("Index") == "\(n)" } ?? groups[n]
-            guard let ref = group.ap("Connection")?.corChild("ObjectReference") else { continue }
+            guard let ref = group.ap("Connection").flatMap(MindManagerXML.objectReference) else { continue }
             let oid = index.topics[id]?.attr("OId") ?? MindManagerXML.oid(id)
             ref.removeAttr("OIdRef")
             ref.setAttr("OIdRef", oid)

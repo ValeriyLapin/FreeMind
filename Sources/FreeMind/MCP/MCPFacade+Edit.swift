@@ -446,7 +446,7 @@ extension MCPFacade {
         if let raw = try args.string("path"), !raw.isEmpty {
             var target = URL(fileURLWithPath: (raw as NSString).expandingTildeInPath).standardizedFileURL
             let ext = target.pathExtension.lowercased()
-            if ext == DocumentTypes.mindManagerExtension, doc.mindManager != nil {
+            if ext == DocumentTypes.mindManagerExtension {
                 type = DocumentTypes.isMindManager(doc.fileType) ? doc.fileType! : DocumentTypes.mindManager
             } else if ext != DocumentTypes.fileExtension {
                 target.appendPathExtension(DocumentTypes.fileExtension)

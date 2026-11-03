@@ -17,6 +17,23 @@ final class MindManagerSession {
         resources = result.resources
     }
 
+    static func blank(rootID: UUID) throws -> MindManagerSession {
+        let primitive = "http://schemas.mindjet.com/MindManager/Primitive/2003"
+        let delta = "http://schemas.mindjet.com/MindManager/Delta/2003"
+        let schemaLocation = [MindManagerXML.ap, MindManagerXML.cor, delta, primitive].map { "\($0) \($0)" }.joined(separator: " ")
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <ap:Map Dirty="\(MindManagerXML.dirty)" OId="\(MindManagerXML.oid(UUID()))" Gen="\(MindManagerXML.clean)" \
+        xmlns:ap="\(MindManagerXML.ap)" xmlns:cor="\(MindManagerXML.cor)" xmlns:pri="\(primitive)" xmlns:xsi="\(MindManagerXML.xsi)" \
+        xsi:schemaLocation="\(schemaLocation)">\
+        <ap:OneTopic><ap:Topic OId="\(MindManagerXML.oid(rootID))"><ap:Text PlainText="" ReadOnly="false"><ap:Font/></ap:Text>\
+        </ap:Topic></ap:OneTopic></ap:Map>
+        """
+        var archive = ZipArchive()
+        try archive.set(Data(xml.utf8), for: MindManagerPackage.documentEntry)
+        return try MindManagerSession(data: archive.serialized(), password: nil)
+    }
+
     static func open(data: Data, fileName: String, knownPassword: String?) throws -> MindManagerSession {
         guard MindManagerPackage.needsPassword(data) else { return try MindManagerSession(data: data, password: nil) }
         var password = knownPassword

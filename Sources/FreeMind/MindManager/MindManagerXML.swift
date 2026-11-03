@@ -49,15 +49,19 @@ enum MindManagerXML {
     }
 
     static func sanitized(_ data: Data) -> Data {
-        let text = String(decoding: data, as: UTF8.self)
+        Data(xmlSafe(String(decoding: data, as: UTF8.self)).utf8)
+    }
+
+    static func xmlSafe(_ text: String) -> String {
+        guard text.unicodeScalars.contains(where: { !isXMLCharacter($0) }) else { return text }
         var scalars = String.UnicodeScalarView()
-        for scalar in text.unicodeScalars {
-            let v = scalar.value
-            if v == 0x09 || v == 0x0A || v == 0x0D || (v >= 0x20 && v != 0xFFFE && v != 0xFFFF) {
-                scalars.append(scalar)
-            }
-        }
-        return Data(String(scalars).utf8)
+        scalars.append(contentsOf: text.unicodeScalars.filter(isXMLCharacter))
+        return String(scalars)
+    }
+
+    private static func isXMLCharacter(_ scalar: Unicode.Scalar) -> Bool {
+        let v = scalar.value
+        return v == 0x09 || v == 0x0A || v == 0x0D || (v >= 0x20 && v != 0xFFFE && v != 0xFFFF)
     }
 
     private static let attributeEscapes: [(Character, Character, String)] = [
@@ -66,6 +70,11 @@ enum MindManagerXML {
 
     static func serialize(_ doc: XMLDocument) throws -> Data {
         doc.characterEncoding = "UTF-8"
+        if let root = doc.rootElement() {
+            for (prefix, uri) in [("ap", ap), ("cor", cor), ("xsi", xsi)] where root.namespace(forPrefix: prefix) == nil {
+                root.addNamespace(XMLNode.namespace(withName: prefix, stringValue: uri) as! XMLNode)
+            }
+        }
         let sentinels = Set(attributeEscapes.map(\.1))
         var escaped = false
         func walk(_ node: XMLNode) throws {
@@ -165,6 +174,10 @@ enum MindManagerXML {
         return e
     }
 
+    static func objectReference(in connection: XMLElement) -> XMLElement? {
+        connection.ap("ObjectReference") ?? connection.corChild("ObjectReference")
+    }
+
     static func number(_ value: Double) -> String {
         String(format: "%.6f", value)
     }
@@ -204,6 +217,7 @@ extension XMLElement {
     }
 
     func setAttr(_ name: String, _ value: String) {
+        let value = MindManagerXML.xmlSafe(value)
         if let existing = attribute(forName: name) {
             existing.stringValue = value
         } else {
