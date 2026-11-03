@@ -66,7 +66,7 @@ claude mcp add --transport http freemind http://127.0.0.1:8775/mcp --header "Aut
 | `delete_topics` | 删除主题（连同子主题，或 `keep_children` 让子主题上移一级）；标为 destructive |
 | `fold_topics` | 折叠 / 展开、全部展开、全部折叠、只显示前几层 |
 | `add_relationship` / `update_relationship` / `delete_relationship` | 联系线 |
-| `set_map_format` | 结构、风格、间距、连线样式、主题宽度 |
+| `set_map_format` | 结构、主分支左右平衡、风格、间距、连线样式、主题宽度 |
 | `create_map` | 新建导图窗口（可以直接带内容） |
 | `save_map` | 保存；新导图第一次要给 `path`，已有文件绝不覆盖 |
 

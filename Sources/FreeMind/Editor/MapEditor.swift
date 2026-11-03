@@ -144,12 +144,14 @@ final class MapEditor {
     /// 所有可撤销修改的唯一入口。
     /// - Parameters:
     ///   - coalesce: 相同 key 的连续修改合并成一步撤销（例如连续输入备注）。
+    ///   - sides: 不平衡思维导图里这些主分支放到哪一侧（true 为右侧），其余主分支留在原来那一侧。
     func perform(_ actionName: String, select newSelection: [UUID]? = nil, coalesce: String? = nil,
-                 _ change: (inout MindMap) -> Void) {
+                 sides: [UUID: Bool] = [:], _ change: (inout MindMap) -> Void) {
         commitEditingIfNeeded()
         let before = Snapshot(map: map, selection: selection)
         var updated = map
         change(&updated)
+        updated.keepBranchSides(from: map, sides: sides)
         let index = updated.buildIndex()
         // 端点主题被删掉的联系线一并移除
         updated.relationships.removeAll { index[$0.from] == nil || index[$0.to] == nil }
@@ -342,7 +344,8 @@ final class MapEditor {
             return
         }
         let topic = Topic(title: defaultTitle(forDepth: path.count))
-        perform(before ? L("Insert Topic Before") : L("Insert Topic"), select: [topic.id]) { m in
+        let sides = parentID == rootID ? [topic.id: index < map.effectiveRightCount] : [:]
+        perform(before ? L("Insert Topic Before") : L("Insert Topic"), select: [topic.id], sides: sides) { m in
             m.insert(topic, into: parentID, at: before ? index : index + 1)
         }
         delegate?.editor(self, reveal: topic.id)
@@ -370,9 +373,11 @@ final class MapEditor {
 
     /// 插入一个带指定标题的子主题（拖入文件等场景）。
     @discardableResult
-    func insertTopics(_ topics: [Topic], into parentID: UUID, at index: Int? = nil, actionName: String) -> [UUID] {
+    func insertTopics(_ topics: [Topic], into parentID: UUID, at index: Int? = nil, side: Bool? = nil,
+                      actionName: String) -> [UUID] {
         guard !topics.isEmpty else { return [] }
-        perform(actionName, select: topics.map(\.id)) { m in
+        let sides = side.map { side in Dictionary(uniqueKeysWithValues: topics.map { ($0.id, side) }) } ?? [:]
+        perform(actionName, select: topics.map(\.id), sides: sides) { m in
             m.update(parentID) { p in
                 p.collapsed = false
                 let i = min(max(index ?? p.children.count, 0), p.children.count)
@@ -425,6 +430,13 @@ final class MapEditor {
         if map.structure == .orgChart { delta = up ? -1 : 1 }
         let target = index + delta
         guard target >= 0, target < parent.children.count else { return }
+        // 不平衡思维导图里最下面的主分支继续往下移：换到另一侧的最下面
+        let rightCount = map.effectiveRightCount
+        if parentID == rootID && map.structure == .mindMap && !map.isBalanced && (index < rightCount) != (target < rightCount) {
+            perform(up ? L("Move Up") : L("Move Down"), select: selection, sides: [id: target < rightCount]) { _ in }
+            delegate?.editor(self, reveal: id)
+            return
+        }
         perform(up ? L("Move Up") : L("Move Down"), select: selection) { m in
             m.update(parentID) { p in p.children.swapAt(index, target) }
         }
@@ -459,17 +471,18 @@ final class MapEditor {
         delegate?.editor(self, reveal: id)
     }
 
-    /// 拖放移动：把 ids 移到 parentID 的 index 位置。
-    func move(_ ids: [UUID], to parentID: UUID, at index: Int?, copy: Bool = false) {
+    /// 拖放移动：把 ids 移到 parentID 的 index 位置；side 是不平衡思维导图里放到哪一侧（true 为右侧）。
+    func move(_ ids: [UUID], to parentID: UUID, at index: Int?, side: Bool? = nil, copy: Bool = false) {
         let moving = map.topmost(ids).filter { $0 != rootID }
         guard !moving.isEmpty else { return }
         if !copy, moving.contains(where: { map.isAncestor($0, of: parentID) }) { return }
         if copy {
             let topics = moving.compactMap { map.topic($0)?.withFreshIDs() }
-            insertTopics(topics, into: parentID, at: index, actionName: L("Copy Topics"))
+            insertTopics(topics, into: parentID, at: index, side: side, actionName: L("Copy Topics"))
             return
         }
-        perform(L("Move Topics"), select: moving) { m in
+        let sides = side.map { side in Dictionary(uniqueKeysWithValues: moving.map { ($0, side) }) } ?? [:]
+        perform(L("Move Topics"), select: moving, sides: sides) { m in
             // 计算插入位置时要扣掉从同一父主题前面移走的主题
             var insertIndex = index
             var topics: [Topic] = []
@@ -710,6 +723,10 @@ final class MapEditor {
 
     func setStructure(_ structure: MapStructure) {
         perform(L("Change Structure")) { $0.structure = structure }
+    }
+
+    func setBalanced(_ balanced: Bool) {
+        perform(L("Balance Map")) { $0.rightCount = balanced ? nil : $0.effectiveRightCount }
     }
 
     func setSpacing(_ spacing: MapSpacing) {

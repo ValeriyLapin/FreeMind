@@ -183,6 +183,7 @@ enum XMindReader {
         let root = topic(rootDict, parent: nil, kind: "root")
         var map = MindMap(root: root, structure: XMindImporter.structure(from: rootDict["structureClass"] as? String),
                           theme: Preferences.shared.defaultTheme)
+        map.rightCount = XMindImporter.rightCount(from: rootDict)
         for rel in (sheet["relationships"] as? [[String: Any]]) ?? [] {
             let rid = assign(rel["id"] as? String, kind: "relationship")
             guard let a = (rel["end1Id"] as? String).flatMap({ index.byXMindID[$0] }),

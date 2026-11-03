@@ -26,6 +26,8 @@ final class MindMapCanvasView: NSView {
         var reference: UUID
         var parentID: UUID
         var index: Int?
+        /// 不平衡思维导图里放到中心主题哪一侧（true 为右侧）。
+        var side: Bool?
     }
 
     struct TopicDrag {
@@ -632,7 +634,7 @@ final class MindMapCanvasView: NSView {
             if drag.started {
                 if let target = drag.target {
                     let copy = event.modifierFlags.contains(.option)
-                    editor.move(drag.ids, to: target.parentID, at: target.index, copy: copy)
+                    editor.move(drag.ids, to: target.parentID, at: target.index, side: target.side, copy: copy)
                 }
             } else if let clicked = clickedSelected, editor.selection.count > 1 {
                 editor.select(clicked)
@@ -673,7 +675,7 @@ final class MindMapCanvasView: NSView {
 
         if let hit = mapLayout.topic(at: p, slop: 4), !excluded(hit), let node = mapLayout.nodes[hit] {
             if node.level == 0 {
-                return DropTarget(kind: .child, reference: hit, parentID: hit, index: nil)
+                return rootDropTarget(at: p, root: node) ?? DropTarget(kind: .child, reference: hit, parentID: hit, index: nil)
             }
             let rel: CGFloat = node.side == .down || node.side == .chain
                 ? (p.x - node.frame.minX) / max(node.frame.width, 1)
@@ -686,7 +688,8 @@ final class MindMapCanvasView: NSView {
             let kind: DropTarget.Kind = before ? .before : .after
             // 思维导图左侧分支视觉顺序与数组顺序相反
             if node.side == .left && map.structure == .mindMap && node.level == 1 { before.toggle() }
-            return DropTarget(kind: kind, reference: hit, parentID: parentID, index: before ? index : index + 1)
+            let side: Bool? = node.level == 1 && map.structure == .mindMap && !map.isBalanced ? node.side == .right : nil
+            return DropTarget(kind: kind, reference: hit, parentID: parentID, index: before ? index : index + 1, side: side)
         }
 
         // 没有直接落在主题上：找附近的主题，成为它的子主题。
@@ -699,6 +702,7 @@ final class MindMapCanvasView: NSView {
             if d < 70, best == nil || d < best!.1 { best = (node, d) }
         }
         guard let (node, _) = best else { return nil }
+        if node.level == 0, let target = rootDropTarget(at: p, root: node) { return target }
         // 按位置算出插入到哪两个子主题之间
         let children = node.childIDs.compactMap { mapLayout.nodes[$0] }
         var index: Int?
@@ -715,6 +719,20 @@ final class MindMapCanvasView: NSView {
             if node.level == 0 && map.structure == .mindMap { index = nil }
         }
         return DropTarget(kind: .child, reference: node.id, parentID: node.id, index: index)
+    }
+
+    /// 不平衡思维导图里落到中心主题上或旁边：落点在中心左边还是右边决定放到哪一侧，高度决定插在哪两个主分支之间。
+    private func rootDropTarget(at p: CGPoint, root: NodeLayout) -> DropTarget? {
+        let map = editor.map
+        guard map.structure == .mindMap, !map.isBalanced else { return nil }
+        let right = p.x >= root.frame.midX
+        let rightCount = map.effectiveRightCount
+        let branches = map.root.children.enumerated().compactMap { i, t in mapLayout.nodes[t.id].map { (i, $0) } }
+        // 右侧从上到下、左侧从下到上排在数组里
+        let index = right
+            ? branches.filter { $0.0 < rightCount && $0.1.frame.midY < p.y }.count
+            : rightCount + branches.filter { $0.0 >= rightCount && $0.1.frame.midY > p.y }.count
+        return DropTarget(kind: .child, reference: root.id, parentID: root.id, index: index, side: right)
     }
 
     // MARK: - 键盘

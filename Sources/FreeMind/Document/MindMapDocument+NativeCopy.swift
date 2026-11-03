@@ -25,7 +25,7 @@ enum FormatLoss {
         if !isXMind && labels { lost.append(L("Labels")) }
         if !isXMind && boundaries { lost.append(L("Boundaries")) }
         if isXMind && attachments { lost.append(L("More than one link or attachment on a topic")) }
-        if !isXMind && map.structure != reference.structure { lost.append(L("Structure")) }
+        if !isXMind && (map.structure != reference.structure || map.isBalanced != reference.isBalanced) { lost.append(L("Structure")) }
         if map.theme != reference.theme || map.spacing != reference.spacing || map.lineStyle != reference.lineStyle
             || map.topicMaxWidth != reference.topicMaxWidth {
             lost.append(L("Theme and layout"))

@@ -35,6 +35,15 @@ struct MapInspector: View {
                 }
                 .inspectorPopUp()
             }
+            if map.structure == .mindMap {
+                InspectorRow(title: L("Balance Map")) {
+                    Toggle(L("Balance Map"), isOn: Binding(get: { map.isBalanced }, set: { editor.setBalanced($0) }))
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .labelsHidden()
+                        .help(L("Spread main topics evenly left and right. Turn off to keep each main topic on the side you drag it to."))
+                }
+            }
             InspectorRow(title: L("Spacing")) {
                 Picker(L("Spacing"), selection: Binding(get: { map.spacing }, set: { editor.setSpacing($0) })) {
                     ForEach(MapSpacing.allCases) { Text($0.title).tag($0) }

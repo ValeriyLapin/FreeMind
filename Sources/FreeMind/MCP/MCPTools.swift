@@ -252,7 +252,7 @@ enum MCPTools {
         catalog.register(MCPTool(
             name: "set_map_format",
             title: "Change map format",
-            description: "Change the whole map's layout structure, theme, spacing, line style or topic width.",
+            description: "Change the whole map's layout structure, branch balance, theme, spacing, line style or topic width.",
             inputSchema: MCPSchema.object([
                 "map_id": mapID,
                 "structure": structures,
@@ -261,6 +261,8 @@ enum MCPTools {
                 "line_style": MCPSchema.enumeration(LineStyle.allCases.map(\.rawValue) + ["theme"],
                                                     "Branch line style; \"theme\" follows the theme"),
                 "topic_max_width": MCPSchema.number("Maximum topic width in points before text wraps (120–600)"),
+                "balanced": MCPSchema.boolean("Mindmap structure only: true spreads main topics evenly left and right; "
+                                              + "false keeps each main topic on the side it is on now"),
             ]),
             tier: .write
         ) { args in try facade.setMapFormat(args) })

@@ -138,10 +138,15 @@ final class MCPFacade {
         }
     }
 
+    static func balanceNote(_ map: MindMap) -> String {
+        guard map.structure == .mindMap, !map.isBalanced else { return "" }
+        return " (unbalanced, first \(map.effectiveRightCount) of \(map.root.children.count) main topics on the right)"
+    }
+
     func mapHeader(_ doc: MindMapDocument) -> String {
         let map = doc.editor.map
         var parts = ["Map \"\(doc.displayName ?? "")\" (map_id \(doc.agentID))",
-                     "structure: \(map.structure.rawValue)",
+                     "structure: \(map.structure.rawValue)\(Self.balanceNote(map))",
                      "theme: \(map.theme.displayName)",
                      Self.count(map.topicCount, "topic")]
         if !map.relationships.isEmpty {

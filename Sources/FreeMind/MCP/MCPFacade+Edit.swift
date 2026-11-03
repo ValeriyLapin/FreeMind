@@ -365,7 +365,9 @@ extension MCPFacade {
             }
         }
         let width = try args.double("topic_max_width").map { min(max($0, 120), 600) }
+        let balanced = try args.bool("balanced")
         try edit(doc, L("Change Map Format")) { m in
+            if let balanced, balanced != m.isBalanced { m.rightCount = balanced ? nil : m.effectiveRightCount }
             if let structure { m.structure = structure }
             if let theme { m.theme = theme }
             if let spacing { m.spacing = spacing }
@@ -373,7 +375,7 @@ extension MCPFacade {
             if let width { m.topicMaxWidth = width }
         }
         let map = doc.editor.map
-        return MCPToolResult(text: "Map format: structure \(map.structure.rawValue) · theme \(map.theme.displayName) · "
+        return MCPToolResult(text: "Map format: structure \(map.structure.rawValue)\(Self.balanceNote(map)) · theme \(map.theme.displayName) · "
                              + "spacing \(map.spacing.rawValue) · lines \(map.effectiveLineStyle.rawValue)"
                              + (map.lineStyle == nil ? " (from theme)" : "") + " · topic width \(Int(map.topicMaxWidth)).")
     }

@@ -344,8 +344,7 @@ struct LayoutEngine {
         placeRootCentered(root)
         root.childSide = .right
         root.children.forEach(measureHorizontal)
-        let count = root.children.count
-        let rightCount = (count + 1) / 2
+        let rightCount = min(map.effectiveRightCount, root.children.count)
         let right = Array(root.children.prefix(rightCount))
         // 顺时针：右侧从上到下，左侧从下到上。
         let left = Array(root.children.suffix(from: rightCount).reversed())

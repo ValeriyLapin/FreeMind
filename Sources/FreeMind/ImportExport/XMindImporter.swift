@@ -59,6 +59,7 @@ enum XMindImporter {
             let root = topic(fromJSON: rootDict, archive: archive, resources: &resources, idMap: &idMap)
             var map = MindMap(root: root, structure: structure(from: rootDict["structureClass"] as? String),
                               theme: Preferences.shared.defaultTheme)
+            map.rightCount = rightCount(from: rootDict)
             map.root.collapsed = false
             for rel in (sheet["relationships"] as? [[String: Any]]) ?? [] {
                 guard let a = (rel["end1Id"] as? String).flatMap({ idMap[$0] }),
@@ -279,6 +280,19 @@ enum XMindImporter {
         if c.contains("org-chart") { return .orgChart }
         if c.contains("tree") { return .tree }
         return .mindMap
+    }
+
+    static let unbalancedProvider = "org.xmind.ui.map.unbalanced"
+
+    /// 关掉 Balance Map 的导图：结构是 map.unbalanced，右侧主分支数记在中心主题的 extensions 里（right-number）。
+    static func rightCount(from rootDict: [String: Any]) -> Int? {
+        guard (rootDict["structureClass"] as? String)?.contains("map.unbalanced") == true else { return nil }
+        let extensions = rootDict["extensions"] as? [[String: Any]] ?? []
+        let entries = extensions.first { $0["provider"] as? String == unbalancedProvider }?["content"] as? [[String: Any]] ?? []
+        let raw = entries.first { $0["name"] as? String == "right-number" }?["content"]
+        if let n = (raw as? String).flatMap({ Int($0) }) ?? (raw as? Int) { return max(n, 0) }
+        let count = ((rootDict["children"] as? [String: Any])?["attached"] as? [Any])?.count ?? 0
+        return (count + 1) / 2
     }
 
     static func convertMarkers(_ ids: [String]) -> [MarkerID] {

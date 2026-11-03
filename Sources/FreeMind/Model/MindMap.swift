@@ -76,6 +76,8 @@ struct MindMap: Equatable {
     var relationships: [Relationship]
     /// 画布上隐藏联系线（导出、打印、缩略图同样不画）。和折叠一样只影响显示，不进入撤销栈，随文件保存。
     var relationshipsHidden = false
+    /// 思维导图结构下右侧的主分支数（数组前 rightCount 个在右侧）；nil 表示自动左右平衡。
+    var rightCount: Int?
 
     init(root: Topic, structure: MapStructure = .mindMap, theme: Theme = .classic,
          spacing: MapSpacing = .standard, lineStyle: LineStyle? = nil, topicMaxWidth: Double = 260,
@@ -91,6 +93,14 @@ struct MindMap: Equatable {
 
     var effectiveLineStyle: LineStyle { lineStyle ?? theme.lineStyle }
 
+    var isBalanced: Bool { rightCount == nil }
+
+    /// 自动平衡时右侧放前一半（多出的一个放右侧）。
+    var effectiveRightCount: Int {
+        let count = root.children.count
+        return min(max(rightCount ?? (count + 1) / 2, 0), count)
+    }
+
     static func blank(title: String = L("Central Topic"), structure: MapStructure = .mindMap, theme: Theme = .classic) -> MindMap {
         let children = (1...4).map { Topic(title: LF("Main Topic %d", $0)) }
         return MindMap(root: Topic(title: title, children: children), structure: structure, theme: theme)
@@ -99,7 +109,7 @@ struct MindMap: Equatable {
 
 extension MindMap: Codable {
     private enum CodingKeys: String, CodingKey {
-        case root, structure, theme, spacing, lineStyle, topicMaxWidth, relationships, relationshipsHidden
+        case root, structure, theme, spacing, lineStyle, topicMaxWidth, relationships, relationshipsHidden, rightCount
     }
 
     init(from decoder: Decoder) throws {
@@ -113,6 +123,7 @@ extension MindMap: Codable {
         // 逐条容错：某一条联系线数据损坏时只丢弃那一条，不影响其他联系线
         relationships = (try c.decodeIfPresent([Lossy<Relationship>].self, forKey: .relationships) ?? []).compactMap(\.value)
         relationshipsHidden = (try? c.decodeIfPresent(Bool.self, forKey: .relationshipsHidden)) ?? false
+        rightCount = (try? c.decodeIfPresent(Int.self, forKey: .rightCount)).flatMap { $0 }.map { max($0, 0) }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -125,6 +136,26 @@ extension MindMap: Codable {
         try c.encode(root, forKey: .root)
         if !relationships.isEmpty { try c.encode(relationships, forKey: .relationships) }
         if relationshipsHidden { try c.encode(true, forKey: .relationshipsHidden) }
+        try c.encodeIfPresent(rightCount, forKey: .rightCount)
+    }
+}
+
+extension MindMap {
+    /// 不平衡时主分支增删、移动之后重新算右侧数量：原有分支留在原来那一侧，sides 里的分支放到指定的一侧（true 为右侧），
+    /// 新出现的分支跟随数组里前一个分支，排在最前面的跟随后一个。
+    mutating func keepBranchSides(from previous: MindMap, sides: [UUID: Bool] = [:]) {
+        guard previous.rightCount != nil, rightCount == previous.rightCount else { return }
+        let oldRight = previous.effectiveRightCount
+        var known: [UUID: Bool] = [:]
+        for (i, child) in previous.root.children.enumerated() { known[child.id] = i < oldRight }
+        known.merge(sides) { $1 }
+        var resolved = root.children.map { known[$0.id] }
+        var last: Bool?
+        for i in resolved.indices {
+            if let side = resolved[i] { last = side } else { resolved[i] = last }
+        }
+        let leading = resolved.compactMap { $0 }.first ?? true
+        rightCount = (resolved.lastIndex { $0 ?? leading } ?? -1) + 1
     }
 }
 

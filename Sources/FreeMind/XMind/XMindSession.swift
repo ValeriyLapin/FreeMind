@@ -29,7 +29,7 @@ final class XMindSession {
         let sheet: [String: Any] = [
             "id": XMindWriter.newID(), "class": "sheet", "title": sheetTitle,
             "rootTopic": ["id": rootID.uuidString.lowercased(), "class": "topic", "title": "",
-                          "structureClass": XMindStructure.className(.mindMap)] as [String: Any],
+                          "structureClass": XMindStructure.className(.mindMap, balanced: true)] as [String: Any],
         ]
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let metadata: [String: Any] = ["dataStructureVersion": "3", "creator": ["name": "FreeMind", "version": version]]

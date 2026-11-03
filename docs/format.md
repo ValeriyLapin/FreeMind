@@ -36,7 +36,9 @@ FreeMind 的专属格式是一个 **macOS package**（目录包）：在 Finder 
     "theme": { … },              // 完整内嵌的主题，见下文
     "root": { … },               // 中心主题（Topic）
     "relationships": [ … ],      // 可选，联系线
-    "relationshipsHidden": true  // 可选，隐藏联系线（只影响显示，联系线数据照常保存）；没有这个字段表示显示
+    "relationshipsHidden": true, // 可选，隐藏联系线（只影响显示，联系线数据照常保存）；没有这个字段表示显示
+    "rightCount": 3              // 可选，关掉 Balance Map 时思维导图右侧的主分支数（root.children 的前 rightCount 个），
+                                 // 其余在左侧；没有这个字段表示自动左右平衡。对应 XMind 的 map.unbalanced + right-number
   },
   "view": {                      // 可选，打开时恢复的视图
     "zoom": 1.0,

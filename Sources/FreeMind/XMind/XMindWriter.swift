@@ -19,9 +19,9 @@ enum XMindMarkers {
 }
 
 enum XMindStructure {
-    static func className(_ structure: MapStructure) -> String {
+    static func className(_ structure: MapStructure, balanced: Bool) -> String {
         switch structure {
-        case .mindMap: "org.xmind.ui.map.unbalanced"
+        case .mindMap: balanced ? "org.xmind.ui.map.clockwise" : XMindImporter.unbalancedProvider
         case .logicRight: "org.xmind.ui.logic.right"
         case .logicLeft: "org.xmind.ui.logic.left"
         case .orgChart: "org.xmind.ui.org-chart.down"
@@ -54,8 +54,14 @@ struct XMindProjection: Equatable {
     }
 
     var structure: MapStructure
+    /// 不平衡思维导图右侧的主分支数（XMind 的 right-number）；自动平衡或其他结构为 nil。
+    var rightCount: Int?
     var root: Node
     var relationships: [Link]
+
+    static func rightNumber(_ map: MindMap) -> Int? {
+        map.structure == .mindMap && !map.isBalanced ? map.effectiveRightCount : nil
+    }
 
     static func rank(_ kind: String?) -> Int {
         XMindReader.childKinds.firstIndex(of: kind ?? "attached") ?? 0
@@ -83,6 +89,7 @@ struct XMindProjection: Equatable {
                  children: Self.ordered(t.children, kinds: kinds).map { node($0, isRoot: false) })
         }
         structure = map.structure
+        rightCount = Self.rightNumber(map)
         root = node(map.root, isRoot: true)
         let ids = Set(map.root.flattenedIDs)
         relationships = map.relationships
@@ -265,8 +272,8 @@ enum XMindWriter {
 
         var sheet = original
         var root = write(current.root, parent: nil, covered: false)
-        if snapshot.structure != current.structure {
-            let name = XMindStructure.className(current.structure)
+        if snapshot.structure != current.structure || snapshot.isBalanced != current.isBalanced {
+            let name = XMindStructure.className(current.structure, balanced: current.isBalanced)
             root["structureClass"] = name
             if var extensions = sheet["extensions"] as? [[String: Any]] {
                 for i in extensions.indices where (extensions[i]["provider"] as? String) == "org.xmind.ui.skeleton.structure.style" {
@@ -276,6 +283,17 @@ enum XMindWriter {
                 }
                 sheet["extensions"] = extensions
             }
+        }
+        if current.structure == .mindMap && (snapshot.structure != current.structure
+                                             || XMindProjection.rightNumber(snapshot) != XMindProjection.rightNumber(current)) {
+            var extensions = (root["extensions"] as? [[String: Any]] ?? []).filter {
+                $0["provider"] as? String != XMindImporter.unbalancedProvider
+            }
+            if !current.isBalanced {
+                extensions.append(["provider": XMindImporter.unbalancedProvider,
+                                   "content": [["name": "right-number", "content": String(current.effectiveRightCount)]]])
+            }
+            root["extensions"] = extensions.isEmpty ? nil : extensions
         }
         sheet["rootTopic"] = root
 

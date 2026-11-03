@@ -568,3 +568,5 @@
 "Save a copy in the FreeMind format to keep them." = "另存一份 FreeMind 格式的副本即可保留这些改动。";
 "Save FreeMind Copy…" = "存储 FreeMind 副本…";
 "Not Now" = "以后再说";
+"Balance Map" = "左右平衡";
+"Spread main topics evenly left and right. Turn off to keep each main topic on the side you drag it to." = "主分支自动在左右两侧均匀分布。关掉后，每个主分支停留在你拖到的那一侧。";
