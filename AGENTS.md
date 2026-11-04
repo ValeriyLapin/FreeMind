@@ -93,4 +93,3 @@ build/DerivedData/Build/Products/Debug/FreeMind.app/Contents/MacOS/FreeMind   # 
 
 - UI 文字一律 `L("English")` / `LF("English %d", …)`，key 就是英文原文；模板正文用 `LT("English", "中文")`。
 - 代码注释用中文。
-- 所有提交直接进 `main`，不留功能分支或会话分支；在 worktree 里做完的提交用 fast-forward 或 cherry-pick 放到 `main` 上，保持线性历史（不要 merge 提交）。推送仍需用户同意。
