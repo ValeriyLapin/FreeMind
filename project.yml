@@ -96,8 +96,7 @@ targets:
         # EdDSA 公钥，用来校验下载的更新包；私钥在发布机的登录钥匙串里（与 Perch / UniReader 共用一对）。
         # ⚠️ 第一次发布之后严禁更换，否则已安装的版本会拒绝以后所有的更新。
         SUPublicEDKey: "g3SCjADYsXhMN5/4hnQZ7eOawvtVoGJJsS5CFew15WQ="
-        # 默认自动检查（不在第二次启动时弹窗询问），用户可以在设置 › 通用里关掉。
-        SUEnableAutomaticChecks: true
+        SUEnableAutomaticChecks: false
         SUScheduledCheckInterval: 86400
         # ── 文档类型 ─────────────────────────────────────────────
         # .fmind 是本应用的专属格式：一个 package（目录包），Finder 里显示为单个文件。

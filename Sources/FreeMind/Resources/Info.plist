@@ -109,7 +109,7 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUEnableAutomaticChecks</key>
-	<true/>
+	<false/>
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/xVanTuring/FreeMind/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
