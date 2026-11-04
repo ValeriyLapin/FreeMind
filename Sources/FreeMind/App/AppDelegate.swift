@@ -17,8 +17,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let prefs = Preferences.shared
         // MCP 服务：让本机的 AI Agent 读取和编辑打开着的导图（设置 › Agent）
         if prefs.mcpEnabled { MCPServer.shared.start() }
-        // 自动更新：菜单构建时已经创建（“检查更新…”以它为 target），这里只是确保它在启动时就开始工作
-        _ = UpdaterService.shared
         DistributedNotificationCenter.default().addObserver(
             self, selector: #selector(handleSecondLaunch(_:)), name: SingleInstanceLock.secondLaunchNotification, object: nil)
         if !prefs.hasLaunchedBefore {
