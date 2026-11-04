@@ -27,4 +27,9 @@ final class DocumentTypesTests: XCTestCase {
         XCTAssertEqual(Set(doc.writableTypes(for: .saveAsOperation)),
                        [DocumentTypes.map, DocumentTypes.mindManager, DocumentTypes.xmind])
     }
+
+    func testClosingAnEditedDocumentAsksToKeepChanges() {
+        let registered = UserDefaults.standard.volatileDomain(forName: UserDefaults.registrationDomain)
+        XCTAssertEqual(registered["NSCloseAlwaysConfirmsChanges"] as? Bool, true)
+    }
 }
