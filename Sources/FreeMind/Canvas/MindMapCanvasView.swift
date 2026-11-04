@@ -692,6 +692,13 @@ final class MindMapCanvasView: NSView {
             return DropTarget(kind: kind, reference: hit, parentID: parentID, index: before ? index : index + 1, side: side)
         }
 
+        // 不平衡思维导图里拖主分支到空白处：留在落点那一侧，不去当附近主题的子主题
+        let rootNode = mapLayout.nodes[editor.rootID]
+        if let rootNode, ids.allSatisfy({ mapLayout.nodes[$0]?.level == 1 }),
+           let target = rootDropTarget(at: p, root: rootNode) {
+            return target
+        }
+
         // 没有直接落在主题上：找附近的主题，成为它的子主题。
         var best: (NodeLayout, CGFloat)?
         for node in mapLayout.nodes.values where !excluded(node.id) {
@@ -701,7 +708,7 @@ final class MindMapCanvasView: NSView {
             let d = hypot(dx, dy)
             if d < 70, best == nil || d < best!.1 { best = (node, d) }
         }
-        guard let (node, _) = best else { return nil }
+        guard let (node, _) = best else { return rootNode.flatMap { rootDropTarget(at: p, root: $0) } }
         if node.level == 0, let target = rootDropTarget(at: p, root: node) { return target }
         // 按位置算出插入到哪两个子主题之间
         let children = node.childIDs.compactMap { mapLayout.nodes[$0] }

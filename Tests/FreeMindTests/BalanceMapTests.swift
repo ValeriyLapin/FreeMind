@@ -87,6 +87,33 @@ final class BalanceMapTests: XCTestCase {
         XCTAssertEqual(editor.layout.nodes[ids[1]]?.side, .right)
     }
 
+    func testDroppingInEmptySpaceMovesBranchToThatSide() throws {
+        step { editor.setBalanced(false) }
+        let canvas = MindMapCanvasView(editor: editor)
+        let ids = editor.map.root.children.map(\.id)
+        let root = try XCTUnwrap(editor.layout.nodes[editor.rootID]).frame
+        let leftmost = editor.layout.nodes.values.map(\.frame.minX).min()!
+        let far = CGPoint(x: leftmost - 200, y: root.minY - 400)
+        let target = try XCTUnwrap(canvas.dropTarget(at: far, dragging: [ids[0]]))
+        XCTAssertEqual(target.parentID, editor.rootID)
+        XCTAssertEqual(target.side, false)
+        step { editor.move([ids[0]], to: target.parentID, at: target.index, side: target.side) }
+        XCTAssertEqual(editor.layout.nodes[ids[0]]?.side, .left)
+        XCTAssertEqual(editor.map.rightCount, 1)
+
+        let gap = try XCTUnwrap(editor.layout.nodes[ids[2]]).frame
+        let between = CGPoint(x: gap.midX, y: gap.maxY + 20)
+        let inGap = try XCTUnwrap(canvas.dropTarget(at: between, dragging: [ids[1]]))
+        XCTAssertEqual(inGap.parentID, editor.rootID)
+        XCTAssertEqual(inGap.side, false)
+    }
+
+    func testBalancedMapDropInEmptySpaceDoesNothing() {
+        let canvas = MindMapCanvasView(editor: editor)
+        let leftmost = editor.layout.nodes.values.map(\.frame.minX).min()!
+        XCTAssertNil(canvas.dropTarget(at: CGPoint(x: leftmost - 400, y: 0), dragging: [editor.map.root.children[0].id]))
+    }
+
     func testBalancedMapIgnoresSides() {
         let ids = editor.map.root.children.map(\.id)
         step { editor.move([ids[0]], to: editor.rootID, at: nil, side: false) }
