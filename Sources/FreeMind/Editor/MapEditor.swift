@@ -153,6 +153,7 @@ final class MapEditor {
         change(&updated)
         updated.keepBranchSides(from: map, sides: sides)
         updated.dropNestedPositions()
+        pinMainTopics(&updated)
         let index = updated.buildIndex()
         // 端点主题被删掉的联系线一并移除
         updated.relationships.removeAll { index[$0.from] == nil || index[$0.to] == nil }
@@ -248,6 +249,28 @@ final class MapEditor {
     /// 保存后断开撤销合并：保存之后的下一次修改必须重新注册撤销，文档才会再次被标记为已修改。
     func breakCoalescing() {
         coalesceToken = nil
+    }
+
+    /// 关掉 Balance Map 后每个主分支都钉在自己的位置上：刚关掉时原地钉住，新出现的主分支放到同一侧最下面一个的下方。
+    private func pinMainTopics(_ m: inout MindMap) {
+        guard m.structure == .mindMap, !m.isBalanced, m.root.children.contains(where: { $0.position == nil }) else { return }
+        let laidOut = LayoutEngine(map: m, measurer: measurer).run()
+        let anyPinned = m.root.children.contains { $0.position != nil }
+        var bottom: [BranchSide: CGFloat] = [:]
+        for child in m.root.children where child.position != nil {
+            guard let node = laidOut.nodes[child.id] else { continue }
+            bottom[node.side] = max(bottom[node.side] ?? -.infinity, node.subtreeBounds.maxY)
+        }
+        let gap = 22 * CGFloat(m.spacing.factor)
+        for i in m.root.children.indices where m.root.children[i].position == nil {
+            guard let node = laidOut.nodes[m.root.children[i].id] else { continue }
+            var y = node.frame.midY
+            if anyPinned, let lowest = bottom[node.side] {
+                y = lowest + gap + node.frame.midY - node.subtreeBounds.minY
+                bottom[node.side] = y + node.subtreeBounds.maxY - node.frame.midY
+            }
+            m.root.children[i].position = Topic.Position(x: Double(node.frame.midX), y: Double(y))
+        }
     }
 
     func relayout() {
@@ -432,18 +455,16 @@ final class MapEditor {
         if map.structure == .orgChart { delta = up ? -1 : 1 }
         let target = index + delta
         guard target >= 0, target < parent.children.count else { return }
+        if parentID == rootID && map.structure == .mindMap && !map.isBalanced && map.topic(id)?.position != nil { return }
         // 不平衡思维导图里最下面的主分支继续往下移：换到另一侧的最下面
         let rightCount = map.effectiveRightCount
         if parentID == rootID && map.structure == .mindMap && !map.isBalanced && (index < rightCount) != (target < rightCount) {
-            perform(up ? L("Move Up") : L("Move Down"), select: selection, sides: [id: target < rightCount]) { m in
-                m.update(id) { $0.position = nil }
-            }
+            perform(up ? L("Move Up") : L("Move Down"), select: selection, sides: [id: target < rightCount]) { _ in }
             delegate?.editor(self, reveal: id)
             return
         }
         perform(up ? L("Move Up") : L("Move Down"), select: selection) { m in
             m.update(parentID) { p in p.children.swapAt(index, target) }
-            m.update(id) { $0.position = nil }
         }
         delegate?.editor(self, reveal: id)
     }
@@ -746,7 +767,10 @@ final class MapEditor {
     }
 
     func setBalanced(_ balanced: Bool) {
-        perform(L("Balance Map")) { $0.rightCount = balanced ? nil : $0.effectiveRightCount }
+        perform(L("Balance Map")) { m in
+            m.rightCount = balanced ? nil : m.effectiveRightCount
+            if balanced { for i in m.root.children.indices { m.root.children[i].position = nil } }
+        }
     }
 
     func setSpacing(_ spacing: MapSpacing) {

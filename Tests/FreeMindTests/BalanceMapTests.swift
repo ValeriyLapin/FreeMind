@@ -74,19 +74,6 @@ final class BalanceMapTests: XCTestCase {
         XCTAssertEqual(editor.map.rightCount, 2)
     }
 
-    func testMovingPastTheBottomSwitchesSide() {
-        step { editor.setBalanced(false) }
-        let ids = editor.map.root.children.map(\.id)
-        editor.select(ids[1])
-        step { editor.moveSelection(up: false) }
-        XCTAssertEqual(editor.map.root.children.map(\.id), ids)
-        XCTAssertEqual(editor.map.rightCount, 1)
-        XCTAssertEqual(editor.layout.nodes[ids[1]]?.side, .left)
-        step { editor.moveSelection(up: false) }
-        XCTAssertEqual(editor.map.rightCount, 2)
-        XCTAssertEqual(editor.layout.nodes[ids[1]]?.side, .right)
-    }
-
     private func center(_ id: UUID) -> CGPoint {
         let f = editor.layout.nodes[id]!.frame
         return CGPoint(x: f.midX, y: f.midY)
@@ -116,7 +103,6 @@ final class BalanceMapTests: XCTestCase {
 
         doc.undoManager?.undo()
         doc.undoManager?.undo()
-        XCTAssertNil(editor.map.root.children.first { $0.id == ids[0] }?.position)
         XCTAssertEqual(center(ids[0]), start)
     }
 
@@ -131,7 +117,7 @@ final class BalanceMapTests: XCTestCase {
         XCTAssertNotNil(target.offset)
     }
 
-    func testDroppingOnTheCentralTopicReturnsToTheStack() throws {
+    func testDroppingOnTheCentralTopicPutsItBelowItsSide() throws {
         step { editor.setBalanced(false) }
         let ids = editor.map.root.children.map(\.id)
         step { editor.move([ids[0]], to: editor.rootID, at: nil, offset: CGVector(dx: 0, dy: -400)) }
@@ -140,20 +126,16 @@ final class BalanceMapTests: XCTestCase {
         let root = try XCTUnwrap(editor.layout.nodes[editor.rootID]).frame
         let target = try XCTUnwrap(canvas.dropTarget(at: CGPoint(x: root.maxX - 2, y: root.midY), dragging: [ids[0]], from: center(ids[0])))
         XCTAssertNil(target.offset)
+        let others = ids.dropFirst().map(center)
         step { editor.move([ids[0]], to: target.parentID, at: target.index, side: target.side, offset: target.offset) }
-        XCTAssertNil(editor.map.root.children.first { $0.id == ids[0] }?.position)
         XCTAssertEqual(editor.layout.nodes[ids[0]]?.side, .right)
+        XCTAssertEqual(ids.dropFirst().map(center), others)
     }
 
-    func testPositionsAreDroppedBelowMainTopicsAndIgnoredWhenBalanced() {
+    func testPositionsAreDroppedBelowMainTopics() {
         step { editor.setBalanced(false) }
         let ids = editor.map.root.children.map(\.id)
         step { editor.move([ids[0]], to: editor.rootID, at: nil, offset: CGVector(dx: 0, dy: -400)) }
-        let free = center(ids[0])
-        step { editor.setBalanced(true) }
-        XCTAssertNotEqual(center(ids[0]), free)
-        step { editor.setBalanced(false) }
-        XCTAssertEqual(center(ids[0]), free)
         step { editor.move([ids[0]], to: ids[1], at: nil) }
         XCTAssertNil(editor.map.topic(ids[0])?.position)
     }
@@ -163,6 +145,43 @@ final class BalanceMapTests: XCTestCase {
         let leftmost = editor.layout.nodes.values.map(\.frame.minX).min()!
         let id = editor.map.root.children[0].id
         XCTAssertNil(canvas.dropTarget(at: CGPoint(x: leftmost - 400, y: 0), dragging: [id], from: center(id)))
+    }
+
+    func testKeyboardDoesNotReorderPinnedMainTopics() {
+        step { editor.setBalanced(false) }
+        let ids = editor.map.root.children.map(\.id)
+        let before = ids.map(center)
+        editor.select(ids[1])
+        step { editor.moveSelection(up: false) }
+        XCTAssertEqual(editor.map.root.children.map(\.id), ids)
+        XCTAssertEqual(ids.map(center), before)
+    }
+
+    func testTurningBalanceOffPinsEveryMainTopic() {
+        let ids = editor.map.root.children.map(\.id)
+        let before = ids.map(center)
+        step { editor.setBalanced(false) }
+        XCTAssertTrue(editor.map.root.children.allSatisfy { $0.position != nil })
+        XCTAssertEqual(ids.map(center), before)
+
+        step { editor.move([ids[0]], to: editor.rootID, at: nil, offset: CGVector(dx: -600, dy: 250)) }
+        XCTAssertEqual(Array(ids.dropFirst()).map(center), Array(before.dropFirst()))
+
+        step { editor.setBalanced(true) }
+        XCTAssertTrue(editor.map.root.children.allSatisfy { $0.position == nil })
+    }
+
+    func testNewMainTopicGoesBelowItsSide() throws {
+        step { editor.setBalanced(false) }
+        let ids = editor.map.root.children.map(\.id)
+        let before = ids.map(center)
+        editor.select(ids[1])
+        step { editor.addSibling(edit: false) }
+        let added = try XCTUnwrap(editor.map.root.children.first { !ids.contains($0.id) }).id
+        XCTAssertEqual(ids.map(center), before)
+        XCTAssertEqual(editor.layout.nodes[added]?.side, .right)
+        let lowest = max(editor.layout.nodes[ids[0]]!.subtreeBounds.maxY, editor.layout.nodes[ids[1]]!.subtreeBounds.maxY)
+        XCTAssertGreaterThan(editor.layout.nodes[added]!.frame.minY, lowest)
     }
 
     func testBalancedMapIgnoresSides() {
