@@ -345,9 +345,13 @@ struct LayoutEngine {
         root.childSide = .right
         root.children.forEach(measureHorizontal)
         let rightCount = min(map.effectiveRightCount, root.children.count)
-        let right = Array(root.children.prefix(rightCount))
+        // 不平衡时自由放置的主分支停在记下的位置，不参与两侧的堆叠
+        let positions = map.isBalanced ? [:] : Dictionary(
+            map.root.children.compactMap { t in t.position.map { (t.id, $0) } }, uniquingKeysWith: { a, _ in a })
+        let stacked = root.children.enumerated().filter { positions[$0.element.id] == nil }
+        let right = stacked.filter { $0.offset < rightCount }.map(\.element)
         // 顺时针：右侧从上到下，左侧从下到上。
-        let left = Array(root.children.suffix(from: rightCount).reversed())
+        let left = Array(stacked.filter { $0.offset >= rightCount }.map(\.element).reversed())
         let gap = vGap(childLevel: 1)
 
         func stack(_ list: [PNode], dir: CGFloat) {
@@ -362,6 +366,13 @@ struct LayoutEngine {
         }
         stack(right, dir: 1)
         stack(left, dir: -1)
+        for c in root.children {
+            guard let position = positions[c.id] else { continue }
+            let x = CGFloat(position.x), y = CGFloat(position.y)
+            let dir: CGFloat = x >= 0 ? 1 : -1
+            let half = c.frame.width / 2
+            placeHorizontal(c, dir: dir, edgeX: dir > 0 ? x - half : x + half, top: y - c.extent / 2)
+        }
     }
 
     // MARK: 组织结构图（向下）

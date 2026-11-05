@@ -28,6 +28,8 @@ final class MindMapCanvasView: NSView {
         var index: Int?
         /// 不平衡思维导图里放到中心主题哪一侧（true 为右侧）。
         var side: Bool?
+        /// 不平衡思维导图里松开在空白处：成为主分支，停在原位置平移这么多之后的地方。
+        var offset: CGVector?
     }
 
     struct TopicDrag {
@@ -296,7 +298,7 @@ final class MindMapCanvasView: NSView {
     private func drawDragFeedback(_ ctx: CGContext, renderer: MapRenderer) {
         guard let drag = pendingDrag, drag.started, let node = mapLayout.nodes[drag.primary] else { return }
         let accent = NSColor.controlAccentColor
-        if let target = drag.target, let ref = mapLayout.nodes[target.reference] {
+        if let target = drag.target, target.offset == nil, let ref = mapLayout.nodes[target.reference] {
             ctx.saveGState()
             ctx.setStrokeColor(accent.cgColor)
             ctx.setFillColor(accent.cgColor)
@@ -598,7 +600,7 @@ final class MindMapCanvasView: NSView {
                 drag.started = true
             }
             drag.current = p
-            drag.target = dropTarget(at: p, dragging: drag.ids)
+            drag.target = dropTarget(at: p, dragging: drag.ids, from: drag.startPoint)
             pendingDrag = drag
             autoscroll(with: event)
             needsDisplay = true
@@ -634,7 +636,7 @@ final class MindMapCanvasView: NSView {
             if drag.started {
                 if let target = drag.target {
                     let copy = event.modifierFlags.contains(.option)
-                    editor.move(drag.ids, to: target.parentID, at: target.index, side: target.side, copy: copy)
+                    editor.move(drag.ids, to: target.parentID, at: target.index, side: target.side, offset: target.offset, copy: copy)
                 }
             } else if let clicked = clickedSelected, editor.selection.count > 1 {
                 editor.select(clicked)
@@ -669,7 +671,7 @@ final class MindMapCanvasView: NSView {
 
     // MARK: - 拖放目标
 
-    func dropTarget(at p: CGPoint, dragging ids: [UUID]) -> DropTarget? {
+    func dropTarget(at p: CGPoint, dragging ids: [UUID], from start: CGPoint) -> DropTarget? {
         let map = editor.map
         let excluded: (UUID) -> Bool = { id in ids.contains { map.isAncestor($0, of: id) } }
 
@@ -692,12 +694,12 @@ final class MindMapCanvasView: NSView {
             return DropTarget(kind: kind, reference: hit, parentID: parentID, index: before ? index : index + 1, side: side)
         }
 
-        // 不平衡思维导图里拖主分支到空白处：留在落点那一侧，不去当附近主题的子主题
-        let rootNode = mapLayout.nodes[editor.rootID]
-        if let rootNode, ids.allSatisfy({ mapLayout.nodes[$0]?.level == 1 }),
-           let target = rootDropTarget(at: p, root: rootNode) {
-            return target
-        }
+        // 不平衡思维导图里拖到空白处：主分支停在松开的位置，不去当附近主题的子主题
+        let freeTarget: DropTarget? = map.structure == .mindMap && !map.isBalanced
+            ? DropTarget(kind: .child, reference: editor.rootID, parentID: editor.rootID, index: nil,
+                         offset: CGVector(dx: p.x - start.x, dy: p.y - start.y))
+            : nil
+        if let freeTarget, ids.allSatisfy({ mapLayout.nodes[$0]?.level == 1 }) { return freeTarget }
 
         // 没有直接落在主题上：找附近的主题，成为它的子主题。
         var best: (NodeLayout, CGFloat)?
@@ -708,7 +710,7 @@ final class MindMapCanvasView: NSView {
             let d = hypot(dx, dy)
             if d < 70, best == nil || d < best!.1 { best = (node, d) }
         }
-        guard let (node, _) = best else { return rootNode.flatMap { rootDropTarget(at: p, root: $0) } }
+        guard let (node, _) = best else { return freeTarget }
         if node.level == 0, let target = rootDropTarget(at: p, root: node) { return target }
         // 按位置算出插入到哪两个子主题之间
         let children = node.childIDs.compactMap { mapLayout.nodes[$0] }

@@ -87,31 +87,82 @@ final class BalanceMapTests: XCTestCase {
         XCTAssertEqual(editor.layout.nodes[ids[1]]?.side, .right)
     }
 
-    func testDroppingInEmptySpaceMovesBranchToThatSide() throws {
+    private func center(_ id: UUID) -> CGPoint {
+        let f = editor.layout.nodes[id]!.frame
+        return CGPoint(x: f.midX, y: f.midY)
+    }
+
+    func testDroppingInEmptySpaceKeepsTheTopicThere() throws {
         step { editor.setBalanced(false) }
         let canvas = MindMapCanvasView(editor: editor)
         let ids = editor.map.root.children.map(\.id)
-        let root = try XCTUnwrap(editor.layout.nodes[editor.rootID]).frame
+        let start = center(ids[0])
         let leftmost = editor.layout.nodes.values.map(\.frame.minX).min()!
-        let far = CGPoint(x: leftmost - 200, y: root.minY - 400)
-        let target = try XCTUnwrap(canvas.dropTarget(at: far, dragging: [ids[0]]))
+        let drop = CGPoint(x: leftmost - 200, y: start.y - 300)
+        let target = try XCTUnwrap(canvas.dropTarget(at: drop, dragging: [ids[0]], from: start))
         XCTAssertEqual(target.parentID, editor.rootID)
-        XCTAssertEqual(target.side, false)
-        step { editor.move([ids[0]], to: target.parentID, at: target.index, side: target.side) }
+        step { editor.move([ids[0]], to: target.parentID, at: target.index, side: target.side, offset: target.offset) }
+        XCTAssertEqual(center(ids[0]).x, drop.x, accuracy: 0.5)
+        XCTAssertEqual(center(ids[0]).y, drop.y, accuracy: 0.5)
         XCTAssertEqual(editor.layout.nodes[ids[0]]?.side, .left)
         XCTAssertEqual(editor.map.rightCount, 1)
 
+        step { editor.addChild(to: editor.rootID, edit: false) }
+        XCTAssertEqual(center(ids[0]).x, drop.x, accuracy: 0.5)
+        XCTAssertEqual(center(ids[0]).y, drop.y, accuracy: 0.5)
+
+        let saved = try JSONDecoder().decode(MindMap.self, from: JSONEncoder().encode(editor.map))
+        XCTAssertEqual(saved.root.children.first { $0.id == ids[0] }?.position, Topic.Position(x: Double(drop.x), y: Double(drop.y)))
+
+        doc.undoManager?.undo()
+        doc.undoManager?.undo()
+        XCTAssertNil(editor.map.root.children.first { $0.id == ids[0] }?.position)
+        XCTAssertEqual(center(ids[0]), start)
+    }
+
+    func testDroppingInAGapBetweenBranchesStaysThere() throws {
+        step { editor.setBalanced(false) }
+        let canvas = MindMapCanvasView(editor: editor)
+        let ids = editor.map.root.children.map(\.id)
         let gap = try XCTUnwrap(editor.layout.nodes[ids[2]]).frame
-        let between = CGPoint(x: gap.midX, y: gap.maxY + 20)
-        let inGap = try XCTUnwrap(canvas.dropTarget(at: between, dragging: [ids[1]]))
-        XCTAssertEqual(inGap.parentID, editor.rootID)
-        XCTAssertEqual(inGap.side, false)
+        let drop = CGPoint(x: gap.midX, y: gap.maxY + 20)
+        let target = try XCTUnwrap(canvas.dropTarget(at: drop, dragging: [ids[1]], from: center(ids[1])))
+        XCTAssertEqual(target.parentID, editor.rootID)
+        XCTAssertNotNil(target.offset)
+    }
+
+    func testDroppingOnTheCentralTopicReturnsToTheStack() throws {
+        step { editor.setBalanced(false) }
+        let ids = editor.map.root.children.map(\.id)
+        step { editor.move([ids[0]], to: editor.rootID, at: nil, offset: CGVector(dx: 0, dy: -400)) }
+        XCTAssertNotNil(editor.map.root.children.first { $0.id == ids[0] }?.position)
+        let canvas = MindMapCanvasView(editor: editor)
+        let root = try XCTUnwrap(editor.layout.nodes[editor.rootID]).frame
+        let target = try XCTUnwrap(canvas.dropTarget(at: CGPoint(x: root.maxX - 2, y: root.midY), dragging: [ids[0]], from: center(ids[0])))
+        XCTAssertNil(target.offset)
+        step { editor.move([ids[0]], to: target.parentID, at: target.index, side: target.side, offset: target.offset) }
+        XCTAssertNil(editor.map.root.children.first { $0.id == ids[0] }?.position)
+        XCTAssertEqual(editor.layout.nodes[ids[0]]?.side, .right)
+    }
+
+    func testPositionsAreDroppedBelowMainTopicsAndIgnoredWhenBalanced() {
+        step { editor.setBalanced(false) }
+        let ids = editor.map.root.children.map(\.id)
+        step { editor.move([ids[0]], to: editor.rootID, at: nil, offset: CGVector(dx: 0, dy: -400)) }
+        let free = center(ids[0])
+        step { editor.setBalanced(true) }
+        XCTAssertNotEqual(center(ids[0]), free)
+        step { editor.setBalanced(false) }
+        XCTAssertEqual(center(ids[0]), free)
+        step { editor.move([ids[0]], to: ids[1], at: nil) }
+        XCTAssertNil(editor.map.topic(ids[0])?.position)
     }
 
     func testBalancedMapDropInEmptySpaceDoesNothing() {
         let canvas = MindMapCanvasView(editor: editor)
         let leftmost = editor.layout.nodes.values.map(\.frame.minX).min()!
-        XCTAssertNil(canvas.dropTarget(at: CGPoint(x: leftmost - 400, y: 0), dragging: [editor.map.root.children[0].id]))
+        let id = editor.map.root.children[0].id
+        XCTAssertNil(canvas.dropTarget(at: CGPoint(x: leftmost - 400, y: 0), dragging: [id], from: center(id)))
     }
 
     func testBalancedMapIgnoresSides() {

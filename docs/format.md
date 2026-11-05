@@ -63,6 +63,7 @@ FreeMind 的专属格式是一个 **macOS package**（目录包）：在 Finder 
 | `markers` | [string] | 标记，见下表 |
 | `labels` | [string] | 标签 |
 | `style` | object | 单独样式覆盖：`shape` `fill` `textColor` `border` `fontSize` `bold` `italic` `branchColor` `boundary` |
+| `position` | {`x`, `y`} | 只用于主分支：关掉 Balance Map 时自由放置的位置，主题中心相对中心主题中心的坐标（pt，y 向下）；自动平衡时忽略 |
 
 缺省值一律省略，读取时缺失字段使用默认值，便于以后扩展字段而不破坏旧文件。
 

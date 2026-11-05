@@ -59,6 +59,7 @@ extension MapEditor {
                 for t in payload.topics { missing.formUnion(t.resourceIDs().filter { !store.contains($0) }) }
             }
             var topics = payload.topics.map { $0.withFreshIDs() }
+            for i in topics.indices { topics[i].position = nil }
             if !missing.isEmpty {
                 // 去掉找不到文件的附件 / 图片引用，避免留下打不开的坏链接
                 for i in topics.indices {
@@ -114,7 +115,8 @@ extension MapEditor {
         perform(L("Duplicate"), select: nil) { m in
             for id in ids {
                 guard let topic = m.topic(id), let parent = m.parentID(of: id), let index = m.path(of: id)?.last else { continue }
-                let copy = topic.withFreshIDs()
+                var copy = topic.withFreshIDs()
+                copy.position = nil
                 newIDs.append(copy.id)
                 m.insert(copy, into: parent, at: index + 1)
             }

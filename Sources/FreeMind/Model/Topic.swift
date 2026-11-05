@@ -14,6 +14,13 @@ struct Topic: Identifiable, Equatable {
     var markers: [MarkerID]
     var labels: [String]
     var style: TopicStyle
+    /// 不平衡思维导图里自由放置的主分支：主题中心相对中心主题中心的位置。只对主分支有效。
+    var position: Position?
+
+    struct Position: Codable, Equatable {
+        var x: Double
+        var y: Double
+    }
 
     init(id: UUID = UUID(),
          title: String,
@@ -79,7 +86,7 @@ struct Topic: Identifiable, Equatable {
 
 extension Topic: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, children, collapsed, note, link, attachments, image, markers, labels, style
+        case id, title, children, collapsed, note, link, attachments, image, markers, labels, style, position
     }
 
     init(from decoder: Decoder) throws {
@@ -95,6 +102,7 @@ extension Topic: Codable {
         markers = try c.decodeIfPresent([MarkerID].self, forKey: .markers) ?? []
         labels = try c.decodeIfPresent([String].self, forKey: .labels) ?? []
         style = try c.decodeIfPresent(TopicStyle.self, forKey: .style) ?? TopicStyle()
+        position = try? c.decodeIfPresent(Position.self, forKey: .position)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -109,6 +117,7 @@ extension Topic: Codable {
         if !markers.isEmpty { try c.encode(markers, forKey: .markers) }
         if !labels.isEmpty { try c.encode(labels, forKey: .labels) }
         if !style.isEmpty { try c.encode(style, forKey: .style) }
+        try c.encodeIfPresent(position, forKey: .position)
         if !children.isEmpty { try c.encode(children, forKey: .children) }
     }
 }

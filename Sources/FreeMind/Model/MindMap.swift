@@ -148,6 +148,7 @@ extension MindMap {
         let oldRight = previous.effectiveRightCount
         var known: [UUID: Bool] = [:]
         for (i, child) in previous.root.children.enumerated() { known[child.id] = i < oldRight }
+        for child in root.children { if let position = child.position { known[child.id] = position.x >= 0 } }
         known.merge(sides) { $1 }
         var resolved = root.children.map { known[$0.id] }
         var last: Bool?
@@ -156,6 +157,16 @@ extension MindMap {
         }
         let leading = resolved.compactMap { $0 }.first ?? true
         rightCount = (resolved.lastIndex { $0 ?? leading } ?? -1) + 1
+    }
+
+    /// 自由位置只属于主分支：变成更深层级的主题时清掉。
+    mutating func dropNestedPositions() {
+        for i in root.children.indices {
+            for j in root.children[i].children.indices {
+                root.children[i].children[j].mutateAll { $0.position = nil }
+            }
+        }
+        root.position = nil
     }
 }
 

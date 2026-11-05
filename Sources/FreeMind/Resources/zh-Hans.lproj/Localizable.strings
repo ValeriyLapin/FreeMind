@@ -550,6 +550,7 @@
 "The written file could not be read back." = "写入的文件无法重新读取。";
 "The written file does not match the map." = "写入的文件与导图不一致。";
 "Topic styles" = "主题样式";
+"Topic positions" = "主题位置";
 "Some markers" = "部分标记";
 "Boundaries" = "外框";
 "More than one link or attachment on a topic" = "同一主题上的多个链接或附件";
